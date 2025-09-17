@@ -1,0 +1,547 @@
+/* Configurações Globais */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+/* Cabeçalho */
+header {
+    background-color: #2979ff; /* Azul do app */
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2em;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+main {
+    padding: 15px;
+}
+
+/* Estilo Padrão dos Cards */
+.card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1em;
+    font-weight: bold;
+    color: #555;
+}
+
+/* Seção de Resumo */
+.summary-section .summary-container {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.summary-month h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.9em;
+}
+.summary-month p {
+    margin: 4px 0;
+    font-size: 0.95em;
+}
+
+/* Cores para Receitas, Despesas e Total */
+.income {
+    color: #2e7d32; /* Verde escuro */
+}
+.expense {
+    color: #c62828; /* Vermelho escuro */
+}
+.total {
+    font-weight: bold;
+}
+
+
+/* Lista de Transações */
+.transaction-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.transaction-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-item .icon-container {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.transaction-details {
+    flex-grow: 1;
+}
+
+.transaction-details .name {
+    display: block;
+    font-weight: bold;
+}
+
+.transaction-details .category {
+    font-size: 0.8em;
+    color: #777;
+}
+
+.transaction-amount {
+    text-align: right;
+}
+
+.transaction-amount .date {
+    font-size: 0.8em;
+    color: #777;
+    display: block;
+}
+
+/* Cores dos valores das transações */
+.transaction-item.income .transaction-amount {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+.transaction-item.expense .transaction-amount {
+    color: #c62828;
+    font-weight: bold;
+}
+
+/* Botão Flutuante (FAB) */
+.fab {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 56px;
+    height: 56px;
+    background-color: #2979ff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease-in-out;
+}
+
+
+/* Estilos para a página Gerenciar Categorias */
+
+/* Container das Abas */
+.tabs-container {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+    background-color: #e0e0e0;
+    border-radius: 8px;
+    padding: 5px;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background-color: transparent;
+    color: #555;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.tab-button.active {
+    background-color: white;
+    color: #2979ff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Lista de Categorias */
+.category-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-details {
+    flex-grow: 1;
+}
+
+.category-details .name {
+    font-weight: bold;
+}
+
+.drag-handle {
+    color: #aaa;
+    cursor: grab;
+    margin-left: 15px;
+}
+
+/* Estilos para o Modal de Adicionar Categoria */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
+    display: none; /* Começa oculto */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 400px;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    font-size: 1.1em;
+    color: #333;
+}
+
+.modal-content input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura */
+    font-size: 1em;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-actions button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+#add-button {
+    background-color: #2979ff; /* Azul do app */
+    color: white;
+}
+
+#cancel-button {
+    background-color: #f0f2f5; /* Fundo do app */
+    color: #555;
+}
+
+/* Estilos para o Menu Lateral */
+.side-menu {
+    height: 100%; /* Altura total */
+    width: 0; /* Começa escondido */
+    position: fixed; /* Fica fixo na tela */
+    z-index: 2000; /* Fica na frente de tudo */
+    top: 0;
+    left: 0;
+    background-color: #ffffff; /* Fundo branco */
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    overflow-x: hidden; /* Desabilita scroll horizontal */
+    padding-top: 60px; /* Espaço no topo */
+    transition: 0.4s; /* Animação suave de abertura/fechamento */
+}
+
+/* Estilo dos links dentro do menu */
+.side-menu a {
+    padding: 15px 20px;
+    text-decoration: none;
+    font-size: 1.1em;
+    color: #333;
+    display: block;
+    transition: 0.3s;
+}
+
+/* Ícones dentro dos links do menu */
+.side-menu a i {
+    margin-right: 10px;
+    width: 20px; /* Alinha o texto */
+}
+
+/* Efeito ao passar o mouse sobre os links */
+.side-menu a:hover {
+    background-color: #f0f2f5; /* Cor de fundo do app */
+    color: #2979ff; /* Cor azul do app */
+}
+
+/* Botão de fechar (X) */
+.side-menu .close-btn {
+    position: absolute;
+    top: 0;
+    right: 15px;
+    font-size: 36px;
+    margin-left: 50px;
+    padding-top: 15px;
+}
+
+/* Cursor de ponteiro para o ícone do menu no header */
+header .fa-bars {
+    cursor: pointer;
+}
+
+/* Cor específica para a aba de Despesas quando ativa */
+#despesas-tab.active {
+    color: #c62828; /* Vermelho escuro usado nas despesas */
+}
+
+/* Estilo para o ícone de lixeira nas listas */
+.delete-icon {
+    color: #c62828; /* Vermelho escuro */
+    margin-left: auto; /* Empurra o ícone para a extremidade direita */
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: transform 0.2s;
+    padding-left: 15px; /* Garante um espaço mínimo do valor */
+}
+
+.delete-icon:hover {
+    transform: scale(1.2); /* Efeito de zoom ao passar o mouse */
+}
+
+/* Estilo para a legenda do mês nas transações */
+.month-legend {
+    text-align: center;
+    font-weight: bold;
+    color: #050505;
+    margin-top: -10px; /* Ajuste para ficar mais perto do título */
+    margin-bottom: 15px;
+    font-size: 1em;
+}
+
+/* Estilo para o container dos filtros de data */
+.filter-container {
+    display: flex;
+    gap: 10px; /* Espaço entre os seletores */
+    margin-top: -5px;
+    margin-bottom: 15px;
+}
+
+.filter-container select {
+    flex: 1; /* Faz com que ambos ocupem o mesmo espaço */
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    font-size: 0.9em;
+}
+
+/* Media Query para telas pequenas (como as de celular) */
+@media (max-width: 450px) {
+    .filter-container {
+        flex-direction: column; /* Muda a direção para vertical */
+    }
+}
+
+/* Estilo para o seletor de mês/ano */
+#month-selector {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    font-size: 1em;
+    font-family: Arial, sans-serif;
+    margin-top: -5px;
+    margin-bottom: 15px;
+}
+
+/* Garante que o texto seja branco em cabeçalhos com cor de fundo definida via style */
+.month-header[style] {
+    color: white;
+}
+
+/* Estilo para o botão de apagar dados no menu */
+#delete-all-data-btn, #delete-all-data-btn i {
+    color: #c62828; /* Vermelho escuro */
+    font-weight: bold;
+}
+
+#delete-all-data-btn:hover {
+    background-color: #ffeeee !important; /* Um fundo levemente avermelhado no hover */
+}
+
+/* Estilo para a linha de total no final de uma seção de transações */
+.section-total {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee; /* Linha separadora */
+    text-align: right;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Estilo para a linha de total de cada mês na seção de transações futuras */
+.future-month-total {
+    text-align: right;
+    font-weight: bold;
+    padding: 12px 15px 12px 0;
+    border-top: 1px dashed #ddd; /* Linha separadora pontilhada */
+    list-style-type: none;
+    font-size: 1em;
+}
+
+/* Garante que o item de total não pareça um item de transação normal */
+.future-month-total::before {
+    content: none;
+}
+
+/* Estilo para item de transação marcado como pago */
+.transaction-item.paid {
+    background-color: #9ff8a7; /* Verde bem claro */
+}
+
+/* Garante que o hover não sobrescreva a cor de pago */
+.transaction-item.paid:hover {
+    background-color: #dceddc; /* Um tom um pouco mais escuro de verde claro */
+}
+
+/* Estilo para o botão de 'Pagar' quando a ação é 'Cancelar Pagamento' */
+#action-pay-btn.cancel-payment {
+    background-color: #ffa726; /* Laranja, para indicar uma ação de 'desfazer' */
+}
+
+/* Estilo para o seletor de filtro do mês atual */
+#current-month-filter {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    font-size: 0.9em;
+    font-family: Arial, sans-serif; 
+}
+
+/* Adicione esta nova regra no lugar */
+/* Adiciona uma borda preta à esquerda de cada resumo, exceto o primeiro */
+.summary-month + .summary-month {
+    padding-left: 20px; /* Adiciona um espaçamento para o texto não colar na linha */
+}
+
+.vertical_line{
+    width: 0%;
+    padding: 1px;
+    background-color: #0c0c0c;
+}
+
+/* --- Estilos da Tela de Bloqueio --- */
+#login-overlay {
+    position: fixed; /* Cobre toda a tela */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f2f5; /* Mesma cor de fundo do app */
+    display: flex; /* Centraliza o conteúdo */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Garante que fique na frente de tudo */
+    flex-direction: column;
+}
+
+.login-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+}
+
+.login-container h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.login-container p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+#password-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+    margin-bottom: 20px;
+}
+
+#login-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: #2979ff; /* Azul do app */
+    color: white;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#login-button:hover {
+    background-color: #1c65d6;
+}

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Categorias</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <div id="login-overlay">
+    <div class="login-container">
+        <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+        <h2>Acesso Restrito</h2>
+        <p>Por favor, digite sua senha para continuar.</p>
+        <input type="password" id="password-input" placeholder="Senha">
+        <button id="login-button">Entrar</button>
+    </div>
+</div>
+
+    <header>
+    <a href="index.html" style="color: white; text-decoration: none;">
+        <i class="fa-solid fa-arrow-left"></i>
+    </a>
+        <h1>Gerenciar Categorias</h1>
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </header>
+
+    <main>
+        <div class="tabs-container">
+            <button id="despesas-tab" class="tab-button active">Despesas</button>
+            <button id="receitas-tab" class="tab-button">Receitas</button>
+        </div>
+
+        <section class="card">
+            <ul id="category-list-despesas" class="category-list">
+                </ul>
+            <ul id="category-list-receitas" class="category-list" style="display: none;">
+                </ul>
+        </section>
+    </main>
+
+    <button class="fab">+</button>
+
+    <div id="add-category-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Nova Categoria</h2>
+            <input type="text" id="category-name-input" placeholder="Nome da Categoria">
+            <div class="modal-actions">
+                <button id="cancel-button">Cancelar</button>
+                <button id="add-button">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- CÓDIGO CORRIGIDO PARA gerenciar_categorias.html ---
+    document.addEventListener('DOMContentLoaded', () => {
+
+                // --- INÍCIO DA LÓGICA DE LOGIN ---
+        const correctPassword = "]T]#6CqHSiUDnAZ9b6gt";
+        const loginOverlay = document.getElementById('login-overlay');
+        const passwordInput = document.getElementById('password-input');
+        const loginButton = document.getElementById('login-button');
+
+        // Verifica se o usuário já está logado nesta sessão
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            loginOverlay.style.display = 'flex'; // Mostra a tela de bloqueio
+        } else {
+            loginOverlay.style.display = 'none'; // Esconde a tela se já estiver logado
+        }
+
+        // Função para tentar o login
+        function attemptLogin() {
+            if (passwordInput.value === correctPassword) {
+                sessionStorage.setItem('isLoggedIn', 'true'); // Marca como logado na sessão
+                loginOverlay.style.display = 'none'; // Esconde a tela de bloqueio
+            } else {
+                alert('Senha incorreta!');
+                passwordInput.value = '';
+            }
+        }
+
+        loginButton.addEventListener('click', attemptLogin);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                attemptLogin();
+            }
+        });
+        // --- FIM DA LÓGICA DE LOGIN ---
+        
+        const despesasTab = document.getElementById('despesas-tab');
+        const receitasTab = document.getElementById('receitas-tab');
+        const despesasList = document.getElementById('category-list-despesas');
+        const receitasList = document.getElementById('category-list-receitas');
+        const fabButton = document.querySelector('.fab');
+        const modal = document.getElementById('add-category-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const cancelButton = document.getElementById('cancel-button');
+        const addButton = document.getElementById('add-button');
+        const categoryInput = document.getElementById('category-name-input');
+        
+        let activeTab = 'despesas';
+
+        function loadCategories() {
+            const categories = JSON.parse(localStorage.getItem('categories')) || { despesas: [], receitas: [] };
+            despesasList.innerHTML = '';
+            receitasList.innerHTML = '';
+            if (categories.despesas) {
+                categories.despesas.forEach(cat => renderCategory(cat, 'despesas'));
+            }
+            if (categories.receitas) {
+                categories.receitas.forEach(cat => renderCategory(cat, 'receitas'));
+            }
+        }
+
+        function saveCategories() {
+            const despesasItems = Array.from(despesasList.querySelectorAll('.category-item .name')).map(span => span.textContent);
+            const receitasItems = Array.from(receitasList.querySelectorAll('.category-item .name')).map(span => span.textContent);
+            const categories = { despesas: despesasItems, receitas: receitasItems };
+            localStorage.setItem('categories', JSON.stringify(categories));
+            console.log('Categorias salvas!', categories); // Adicionei para ajudar a depurar
+        }
+        
+        function renderCategory(name, type) {
+            const list = type === 'despesas' ? despesasList : receitasList;
+            const iconClass = type === 'despesas' ? 'fa-solid fa-tag' : 'fa-solid fa-dollar-sign';
+            const iconColor = type === 'despesas' ? '#546e7a' : '#2e7d32';
+            const itemHTML = `
+                <li class="category-item">
+                    <div class="icon-container" style="background-color: ${iconColor};"><i class="${iconClass}"></i></div>
+                    <div class="category-details">
+                        <span class="name">${name}</span>
+                    </div>
+                    <i class="fa-solid fa-trash delete-icon"></i>
+                </li>
+            `;
+            list.insertAdjacentHTML('beforeend', itemHTML);
+        }
+
+        function addCategory() {
+            const categoryName = categoryInput.value.trim();
+            if (categoryName) {
+                renderCategory(categoryName, activeTab);
+                // ----- CORREÇÃO ESTÁ AQUI -----
+                saveCategories(); // Esta linha estava faltando!
+                // -----------------------------
+                closeModal();
+            } else {
+                alert('Por favor, digite um nome para a categoria.');
+            }
+        }
+
+        document.body.addEventListener('click', (event) => {
+            if (event.target.classList.contains('delete-icon')) {
+                const item = event.target.closest('.category-item');
+                if (confirm('Tem certeza que deseja excluir esta categoria?')) {
+                    item.remove();
+                    // ----- GARANTINDO QUE SALVE AO DELETAR -----
+                    saveCategories(); // Esta linha também é crucial
+                    // ------------------------------------------
+                }
+            }
+        });
+        
+        // O resto do código (funções de abas e modal) continua o mesmo...
+        function switchTab(tab) {
+            activeTab = tab;
+            if (tab === 'despesas') {
+                despesasTab.classList.add('active');
+                receitasTab.classList.remove('active');
+                despesasList.style.display = 'block';
+                receitasList.style.display = 'none';
+                fabButton.style.backgroundColor = '#c62828';
+            } else {
+                receitasTab.classList.add('active');
+                despesasTab.classList.remove('active');
+                receitasList.style.display = 'block';
+                despesasList.style.display = 'none';
+                fabButton.style.backgroundColor = '#2979ff';
+            }
+        }
+        function closeModal() { modal.style.display = 'none'; categoryInput.value = ''; }
+        function openModal() {
+             modalTitle.textContent = activeTab === 'despesas' ? 'Nova Categoria de Despesa' : 'Nova Categoria de Receita';
+             modal.style.display = 'flex';
+             categoryInput.focus();
+        }
+
+        fabButton.addEventListener('click', openModal);
+        cancelButton.addEventListener('click', closeModal);
+        addButton.addEventListener('click', addCategory);
+        categoryInput.addEventListener('keypress', (e) => e.key === 'Enter' && addButton.click());
+        despesasTab.addEventListener('click', () => switchTab('despesas'));
+        receitasTab.addEventListener('click', () => switchTab('receitas'));
+
+        switchTab('despesas');
+        loadCategories();
+    });
+</script>
+
+</body>
+</html>

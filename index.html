@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MF Orçamento</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <div id="login-overlay">
+    <div class="login-container">
+        <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+        <h2>Acesso Restrito</h2>
+        <p>Por favor, digite sua senha para continuar.</p>
+        <input type="password" id="password-input" placeholder="Senha">
+        <button id="login-button">Entrar</button>
+    </div>
+    </div>
+
+    <div id="side-menu" class="side-menu">
+        <a href="javascript:void(0)" id="close-btn" class="close-btn">&times;</a>
+        <a href="gerenciar_categorias.html">
+            <i class="fa-solid fa-list-check"></i> GERENCIAR CATEGORIAS
+        </a>
+        <a href="contas.html">
+            <i class="fa-solid fa-wallet"></i> CONTAS
+        </a>
+        <a href="#" id="export-btn">
+            <i class="fa-solid fa-download"></i> EXPORTAR DADOS
+        </a>
+        <a href="#" id="import-btn">
+            <i class="fa-solid fa-upload"></i> IMPORTAR DADOS
+        </a>
+        <a href="#" id="delete-all-data-btn" style="margin-top: 20px; border-top: 1px solid #eee;">
+            <i class="fa-solid fa-eraser"></i> APAGAR TODOS OS DADOS
+        </a>
+    </div>
+
+    <header>
+        <i id="menu-icon" class="fa-solid fa-bars"></i>
+        <h1>Visão geral</h1>
+        <i class="fa-solid fa-chart-simple"></i>
+    </header>
+
+    <main>
+        <section class="card summary-section">
+            <h2>RESUMO</h2>
+            <div class="summary-container">
+                <div class="summary-month">
+                    <h3 id="current-month"></h3>
+                    <p class="income" id="summary-income">Receitas: 0,00 R$</p>
+                    <p class="expense" id="summary-expense">Despesas: 0,00 R$</p>
+                    <p class="total" id="summary-total">Total: 0,00 R$</p>
+                </div>
+                <div class="vertical_line"></div>
+                <div class="summary-month">
+                    <h3 id="next-month-summary-title"></h3>
+                    <p class="income" id="next-month-summary-income">Receitas: 0,00 R$</p>
+                    <p class="expense" id="next-month-summary-expense">Despesas: 0,00 R$</p>
+                    <p class="total" id="next-month-summary-total">Total: 0,00 R$</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>TRANSAÇÕES MÊS ATUAL</h2>
+            <p id="month-legend" class="month-legend"></p>
+            <div class="filter-container">
+                <select id="current-month-filter"></select>
+                <select id="current-month-sorter"></select>
+            </div>
+            <ul id="transaction-list-month" class="transaction-list"></ul>
+            <div id="month-total-container" class="section-total" style="display: none;">
+                Total: <span id="month-total-value"></span>
+            </div>
+        </section>
+        
+        <section class="card">
+            <h2>TODAS AS TRANSAÇÕES</h2>
+            <div class="filter-container">
+                <select id="all-transactions-month-select"></select>
+                <select id="all-transactions-year-select"></select>
+            </div>
+            <div class="filter-container">
+                <select id="all-transactions-status-filter"></select>
+                <select id="all-transactions-sorter"></select>
+            </div>
+            <ul id="transaction-list-all" class="transaction-list"></ul>
+            <div id="all-transactions-total-container" class="section-total" style="display: none;">
+                Total Filtrado: <span id="all-transactions-total-value"></span>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>TRANSAÇÕES FUTURAS</h2>
+            <div class="filter-container">
+                <select id="future-transactions-status-filter"></select>
+                <select id="future-transactions-sorter"></select>
+            </div>
+            <ul id="transaction-list-future" class="transaction-list"></ul>
+        </section>
+    </main>
+
+    <button id="fab-add-transaction" class="fab">+</button>
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+    <div id="add-transaction-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Nova Transação</h2>
+            <select id="transaction-type">
+                <option value="expense">Despesa</option>
+                <option value="income">Receita</option>
+            </select>
+            <select id="transaction-category"></select>
+            <input type="date" id="transaction-date">
+            <input type="number" id="transaction-installments" placeholder="Nº de Parcelas" min="1">
+            <input type="text" id="transaction-description" placeholder="Descrição (ex: Compra na Amazon)">
+            <input type="number" id="transaction-amount" placeholder="Valor da Parcela (ex: 150.50)">
+            <div class="modal-actions">
+                <button id="cancel-button">Cancelar</button>
+                <button id="add-button">Adicionar</button>
+            </div>
+        </div>
+    </div>
+    <div id="edit-transaction-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Editar Transação</h2>
+            <input type="hidden" id="edit-transaction-id">
+            <select id="edit-transaction-type">
+                <option value="expense">Despesa</option>
+                <option value="income">Receita</option>
+            </select>
+            <select id="edit-transaction-category"></select>
+            <input type="date" id="edit-transaction-date">
+            <input type="text" id="edit-transaction-description" placeholder="Descrição">
+            <input type="number" id="edit-transaction-amount" placeholder="Valor">
+            <div class="modal-actions">
+                <button id="cancel-edit-button">Cancelar</button>
+                <button id="save-edit-button">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+    <div id="action-choice-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>O que deseja fazer?</h2>
+            <input type="hidden" id="action-choice-id">
+            <div class="modal-actions" style="justify-content: space-around; margin-top: 20px;">
+                <button id="action-edit-btn" style="background-color: #42a5f5;">EDITAR</button>
+                <button id="action-pay-btn" style="background-color: #08c011;">PAGAR</button>
+            </div>
+             <div class="modal-actions" style="margin-top: 10px;">
+                <button id="action-cancel-btn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- INÍCIO DA LÓGICA DE LOGIN ---
+        const correctPassword = "]T]#6CqHSiUDnAZ9b6gt";
+        const loginOverlay = document.getElementById('login-overlay');
+        const passwordInput = document.getElementById('password-input');
+        const loginButton = document.getElementById('login-button');
+
+        // Verifica se o usuário já está logado nesta sessão
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            loginOverlay.style.display = 'flex'; // Mostra a tela de bloqueio
+        } else {
+            loginOverlay.style.display = 'none'; // Esconde a tela se já estiver logado
+        }
+
+        // Função para tentar o login
+        function attemptLogin() {
+            if (passwordInput.value === correctPassword) {
+                sessionStorage.setItem('isLoggedIn', 'true'); // Marca como logado na sessão
+                loginOverlay.style.display = 'none'; // Esconde a tela de bloqueio
+            } else {
+                alert('Senha incorreta!');
+                passwordInput.value = '';
+            }
+        }
+
+        loginButton.addEventListener('click', attemptLogin);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                attemptLogin();
+            }
+        });
+        // --- FIM DA LÓGICA DE LOGIN ---
+
+
+        // --- SELEÇÃO DOS ELEMENTOS ---
+        const transactionListMonth = document.getElementById('transaction-list-month');
+        const transactionListAll = document.getElementById('transaction-list-all');
+        const transactionListFuture = document.getElementById('transaction-list-future');
+        const currentMonthFilter = document.getElementById('current-month-filter');
+        const currentMonthSorter = document.getElementById('current-month-sorter');
+        const monthSelect = document.getElementById('all-transactions-month-select');
+        const yearSelect = document.getElementById('all-transactions-year-select');
+        const statusFilterAll = document.getElementById('all-transactions-status-filter');
+        const sorterAll = document.getElementById('all-transactions-sorter');
+        const futureStatusFilter = document.getElementById('future-transactions-status-filter');
+        const futureSorter = document.getElementById('future-transactions-sorter');
+        const monthLegend = document.getElementById('month-legend');
+        const monthTotalContainer = document.getElementById('month-total-container');
+        const monthTotalValue = document.getElementById('month-total-value');
+        const allTransactionsTotalContainer = document.getElementById('all-transactions-total-container');
+        const allTransactionsTotalValue = document.getElementById('all-transactions-total-value');
+        const menuIcon = document.getElementById('menu-icon');
+        const sideMenu = document.getElementById('side-menu');
+        const closeBtn = document.getElementById('close-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const importBtn = document.getElementById('import-btn');
+        const deleteAllDataBtn = document.getElementById('delete-all-data-btn');
+        const importFileInput = document.getElementById('import-file-input');
+        const fab = document.getElementById('fab-add-transaction');
+        const addModal = document.getElementById('add-transaction-modal');
+        const editModal = document.getElementById('edit-transaction-modal');
+        const actionChoiceModal = document.getElementById('action-choice-modal');
+        const cancelAddBtn = document.getElementById('cancel-button');
+        const addBtn = document.getElementById('add-button');
+        const descriptionInput = document.getElementById('transaction-description');
+        const amountInput = document.getElementById('transaction-amount');
+        const typeInput = document.getElementById('transaction-type');
+        const categoryInput = document.getElementById('transaction-category');
+        const dateInput = document.getElementById('transaction-date');
+        const installmentsInput = document.getElementById('transaction-installments');
+        const cancelEditBtn = document.getElementById('cancel-edit-button');
+        const saveEditBtn = document.getElementById('save-edit-button');
+        const editIdInput = document.getElementById('edit-transaction-id');
+        const editDescriptionInput = document.getElementById('edit-transaction-description');
+        const editAmountInput = document.getElementById('edit-transaction-amount');
+        const editTypeInput = document.getElementById('edit-transaction-type');
+        const editCategoryInput = document.getElementById('edit-transaction-category');
+        const editDateInput = document.getElementById('edit-transaction-date');
+        const actionChoiceIdInput = document.getElementById('action-choice-id');
+        const actionEditBtn = document.getElementById('action-edit-btn');
+        const actionPayBtn = document.getElementById('action-pay-btn');
+        const actionCancelBtn = document.getElementById('action-cancel-btn');
+        const summaryIncomeEl = document.getElementById('summary-income');
+        const summaryExpenseEl = document.getElementById('summary-expense');
+        const summaryTotalEl = document.getElementById('summary-total');
+        const currentMonthTitleEl = document.getElementById('current-month');
+        const nextMonthIncomeEl = document.getElementById('next-month-summary-income');
+        const nextMonthExpenseEl = document.getElementById('next-month-summary-expense');
+        const nextMonthTotalEl = document.getElementById('next-month-summary-total');
+        const nextMonthTitleEl = document.getElementById('next-month-summary-title');
+        
+        const headerColors = ['#42a5f5', '#66bb6a', '#ffa726', '#ef5350', '#ab47bc', '#78909c', '#26a69a'];
+
+        const monthYearString = new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+        currentMonthTitleEl.textContent = monthYearString;
+        monthLegend.textContent = monthYearString;
+
+        // --- BANCO DE DADOS E FUNÇÕES PRINCIPAIS ---
+        const getTransactions = () => JSON.parse(localStorage.getItem('transactions')) || [];
+        const saveTransactions = (transactions) => localStorage.setItem('transactions', JSON.stringify(transactions));
+        const getCategories = () => JSON.parse(localStorage.getItem('categories')) || { despesas: [], receitas: [] };
+
+        function getTransactionDate(t) {
+            let dateValue = t.date || t.id;
+            if (typeof dateValue === 'string') {
+                dateValue = dateValue.replace(/-/g, '\/');
+            }
+            return new Date(dateValue);
+        }
+
+        function loadApp() {
+            populateStatusFilter(currentMonthFilter, "Mostrar Todos");
+            populateSorter(currentMonthSorter, "Ordenar por:");
+            populateStatusFilter(statusFilterAll, "Mostrar Todos");
+            populateSorter(sorterAll, "Ordenar por:");
+            populateStatusFilter(futureStatusFilter, "Mostrar Todos");
+            populateSorter(futureSorter, "Ordenar por:");
+
+            const allTransactions = getTransactions();
+            loadCurrentMonthTransactions(allTransactions);
+            loadFutureTransactions(allTransactions);
+            loadNextMonthSummary(allTransactions);
+            populateYearSelector(allTransactions);
+            populateMonthSelector();
+            
+            const lastMonth = new Date();
+            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            monthSelect.value = lastMonth.getMonth();
+            const lastMonthYear = lastMonth.getFullYear();
+            if (Array.from(yearSelect.options).some(opt => opt.value == lastMonthYear)) {
+                yearSelect.value = lastMonthYear;
+            }
+            loadAllTransactionsFiltered();
+        }
+
+        function loadCurrentMonthTransactions(transactions) {
+            const allTransactions = transactions || getTransactions();
+            let monthIncome = 0;
+            let monthExpense = 0;
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            let currentMonthTransactions = allTransactions.filter(t => {
+                const transactionDate = getTransactionDate(t);
+                return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
+            });
+
+            const filterValue = currentMonthFilter.value;
+            if (filterValue === 'paid') {
+                currentMonthTransactions = currentMonthTransactions.filter(t => t.isPaid);
+            } else if (filterValue === 'unpaid') {
+                currentMonthTransactions = currentMonthTransactions.filter(t => !t.isPaid);
+            } else if (filterValue === 'income') {
+                currentMonthTransactions = currentMonthTransactions.filter(t => t.type === 'income');
+            } else if (filterValue === 'expense') {
+                currentMonthTransactions = currentMonthTransactions.filter(t => t.type === 'expense');
+            }
+            
+            const sortValue = currentMonthSorter.value;
+            switch(sortValue) {
+                case 'date_asc':
+                    currentMonthTransactions.sort((a, b) => getTransactionDate(a) - getTransactionDate(b));
+                    break;
+                case 'value_desc':
+                    currentMonthTransactions.sort((a, b) => b.amount - a.amount);
+                    break;
+                case 'value_asc':
+                    currentMonthTransactions.sort((a, b) => a.amount - b.amount);
+                    break;
+                case 'date_desc':
+                default:
+                    currentMonthTransactions.sort((a, b) => getTransactionDate(b) - getTransactionDate(a));
+                    break;
+            }
+            
+            transactionListMonth.innerHTML = '';
+            currentMonthTransactions.forEach(t => {
+                transactionListMonth.insertAdjacentHTML('beforeend', generateTransactionHTML(t));
+                if (t.type === 'income') monthIncome += t.amount;
+                else monthExpense += t.amount;
+            });
+
+            if (currentMonthTransactions.length > 0) {
+                monthTotalContainer.style.display = 'block';
+            } else {
+                monthTotalContainer.style.display = 'none';
+            }
+            updateSummary(monthIncome, monthExpense);
+        }
+
+        function loadAllTransactionsFiltered() {
+            const allTransactions = getTransactions();
+            const selectedMonth = parseInt(monthSelect.value);
+            const selectedYear = parseInt(yearSelect.value);
+            transactionListAll.innerHTML = '';
+
+            if (isNaN(selectedMonth) || isNaN(selectedYear)) {
+                allTransactionsTotalContainer.style.display = 'none';
+                return;
+            }
+
+            let filteredTransactions = allTransactions.filter(t => {
+                const transactionDate = getTransactionDate(t);
+                return transactionDate.getMonth() === selectedMonth && transactionDate.getFullYear() === selectedYear;
+            });
+
+            const filterValue = statusFilterAll.value;
+            if (filterValue === 'paid') {
+                filteredTransactions = filteredTransactions.filter(t => t.isPaid);
+            } else if (filterValue === 'unpaid') {
+                filteredTransactions = filteredTransactions.filter(t => !t.isPaid);
+            } else if (filterValue === 'income') {
+                filteredTransactions = filteredTransactions.filter(t => t.type === 'income');
+            } else if (filterValue === 'expense') {
+                filteredTransactions = filteredTransactions.filter(t => t.type === 'expense');
+            }
+
+            const sortValue = sorterAll.value;
+            switch(sortValue) {
+                case 'date_asc':
+                    filteredTransactions.sort((a, b) => getTransactionDate(a) - getTransactionDate(b));
+                    break;
+                case 'value_desc':
+                    filteredTransactions.sort((a, b) => b.amount - a.amount);
+                    break;
+                case 'value_asc':
+                    filteredTransactions.sort((a, b) => a.amount - b.amount);
+                    break;
+                case 'date_desc':
+                default:
+                    filteredTransactions.sort((a, b) => getTransactionDate(b) - getTransactionDate(a));
+                    break;
+            }
+            
+            filteredTransactions.forEach(t => transactionListAll.insertAdjacentHTML('beforeend', generateTransactionHTML(t)));
+
+            if (filteredTransactions.length > 0) {
+                let filteredIncome = 0;
+                let filteredExpense = 0;
+                filteredTransactions.forEach(t => {
+                    if (t.type === 'income') filteredIncome += t.amount;
+                    else filteredExpense += t.amount;
+                });
+                const total = filteredIncome - filteredExpense;
+                allTransactionsTotalValue.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                allTransactionsTotalValue.classList.remove('income', 'expense');
+                allTransactionsTotalValue.classList.add(total >= 0 ? 'income' : 'expense');
+                allTransactionsTotalContainer.style.display = 'block';
+            } else {
+                allTransactionsTotalContainer.style.display = 'none';
+            }
+        }
+
+        function loadFutureTransactions(allTransactions) {
+            transactionListFuture.innerHTML = '';
+            const now = new Date();
+            const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            let futureTransactions = allTransactions.filter(t => getTransactionDate(t) >= startOfNextMonth);
+
+            const filterValue = futureStatusFilter.value;
+            if (filterValue === 'paid') {
+                futureTransactions = futureTransactions.filter(t => t.isPaid);
+            } else if (filterValue === 'unpaid') {
+                futureTransactions = futureTransactions.filter(t => !t.isPaid);
+            } else if (filterValue === 'income') {
+                futureTransactions = futureTransactions.filter(t => t.type === 'income');
+            } else if (filterValue === 'expense') {
+                futureTransactions = futureTransactions.filter(t => t.type === 'expense');
+            }
+
+            const sortValue = futureSorter.value;
+            switch(sortValue) {
+                case 'date_asc':
+                    futureTransactions.sort((a, b) => getTransactionDate(a) - getTransactionDate(b));
+                    break;
+                case 'value_desc':
+                    futureTransactions.sort((a, b) => b.amount - a.amount);
+                    break;
+                case 'value_asc':
+                    futureTransactions.sort((a, b) => a.amount - b.amount);
+                    break;
+                case 'date_desc':
+                default:
+                    futureTransactions.sort((a, b) => getTransactionDate(b) - getTransactionDate(a));
+                    break;
+            }
+
+            if (futureTransactions.length === 0) return;
+
+            const groupedTransactions = {};
+            futureTransactions.forEach(t => {
+                const transactionDate = getTransactionDate(t);
+                const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth()).padStart(2, '0')}`;
+                if (!groupedTransactions[monthKey]) groupedTransactions[monthKey] = [];
+                groupedTransactions[monthKey].push(t);
+            });
+            const sortedMonthKeys = Object.keys(groupedTransactions).sort();
+            
+            sortedMonthKeys.forEach((monthKey, index) => {
+                const [year, month] = monthKey.split('-');
+                const headerDate = new Date(year, month);
+                const headerText = headerDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+                const color = headerColors[index % headerColors.length];
+                const headerHTML = `<li class="month-header" style="background-color: ${color};">${headerText}</li>`;
+                transactionListFuture.insertAdjacentHTML('beforeend', headerHTML);
+                
+                const monthTransactions = groupedTransactions[monthKey];
+                
+                let monthIncome = 0;
+                let monthExpense = 0;
+                monthTransactions.forEach(t => {
+                    transactionListFuture.insertAdjacentHTML('beforeend', generateTransactionHTML(t));
+                    if (t.type === 'income') monthIncome += t.amount;
+                    else monthExpense += t.amount;
+                });
+                
+                const total = monthIncome - monthExpense;
+                const formattedTotal = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const totalColorClass = total >= 0 ? 'income' : 'expense';
+                const totalHTML = `
+                    <li class="future-month-total">
+                        Total: <span class="${totalColorClass}">${formattedTotal}</span>
+                    </li>
+                `;
+                transactionListFuture.insertAdjacentHTML('beforeend', totalHTML);
+            });
+        }
+        
+        function loadNextMonthSummary(allTransactions) {
+            let nextMonthIncome = 0;
+            let nextMonthExpense = 0;
+            const now = new Date();
+            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            const targetMonth = nextMonth.getMonth();
+            const targetYear = nextMonth.getFullYear();
+
+            nextMonthTitleEl.textContent = nextMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+
+            const nextMonthTransactions = allTransactions.filter(t => {
+                const transactionDate = getTransactionDate(t);
+                return transactionDate.getMonth() === targetMonth && transactionDate.getFullYear() === targetYear;
+            });
+
+            nextMonthTransactions.forEach(t => {
+                if (t.type === 'income') nextMonthIncome += t.amount;
+                else nextMonthExpense += t.amount;
+            });
+
+            const total = nextMonthIncome - nextMonthExpense;
+            nextMonthIncomeEl.textContent = `Receitas: ${nextMonthIncome.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            nextMonthExpenseEl.textContent = `Despesas: -${nextMonthExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            nextMonthTotalEl.textContent = `Total: ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            nextMonthTotalEl.style.color = total >= 0 ? '#2e7d32' : '#c62828';
+        }
+
+        function populateStatusFilter(element, defaultText) {
+            element.innerHTML = `
+                <option value="all">${defaultText}</option>
+                <option value="paid">Apenas Pagos</option>
+                <option value="unpaid">Apenas Não Pagos</option>
+                <option value="income">Apenas Receitas</option>
+                <option value="expense">Apenas Despesas</option>
+            `;
+        }
+
+        function populateSorter(element, defaultText) {
+            element.innerHTML = `
+                <option value="date_desc">${defaultText} Recentes</option>
+                <option value="date_asc">${defaultText} Antigos</option>
+                <option value="value_desc">${defaultText} Maior Valor</option>
+                <option value="value_asc">${defaultText} Menor Valor</option>
+            `;
+        }
+
+        function populateMonthSelector() {
+            const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            monthSelect.innerHTML = '';
+            months.forEach((month, index) => {
+                monthSelect.innerHTML += `<option value="${index}">${month}</option>`;
+            });
+        }
+
+        function populateYearSelector(allTransactions) {
+            yearSelect.innerHTML = '';
+            const years = new Set();
+            allTransactions.forEach(t => {
+                years.add(getTransactionDate(t).getFullYear());
+            });
+            if(years.size === 0) years.add(new Date().getFullYear());
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+            sortedYears.forEach(year => {
+                yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+        }
+        
+        function generateTransactionHTML(t) {
+            const isIncome = t.type === 'income';
+            const formattedAmount = t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const itemClass = isIncome ? 'income' : 'expense';
+            const iconClass = isIncome ? 'fa-solid fa-dollar-sign' : 'fa-solid fa-tag';
+            const iconColor = isIncome ? '#66bb6a' : '#ef5350';
+            const displayDate = getTransactionDate(t).toLocaleDateString('pt-BR');
+            const paidClass = t.isPaid ? 'paid' : '';
+            return `
+                <li class="transaction-item ${itemClass} ${paidClass}" data-id="${t.id}">
+                    <div class="icon-container" style="background-color: ${iconColor};"><i class="${iconClass}"></i></div>
+                    <div class="transaction-details" style="cursor: pointer;">
+                        <span class="name">${t.category}</span>
+                        <span class="category">${t.description}</span>
+                    </div>
+                    <div class="transaction-amount" style="cursor: pointer;">
+                        <span>${isIncome ? '' : '-'}${formattedAmount}</span>
+                        <span class="date">${displayDate}</span>
+                    </div>
+                    <i class="fa-solid fa-trash delete-icon"></i>
+                </li>
+            `;
+        }
+        
+        function updateSummary(income, expense) {
+            const total = income - expense;
+            summaryIncomeEl.textContent = `Receitas: ${income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            summaryExpenseEl.textContent = `Despesas: -${expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            summaryTotalEl.textContent = `Total: ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            summaryTotalEl.style.color = total >= 0 ? '#2e7d32' : '#c62828';
+            monthTotalValue.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            monthTotalValue.classList.remove('income', 'expense');
+            monthTotalValue.classList.add(total >= 0 ? 'income' : 'expense');
+        }
+
+        function addTransaction() {
+            const description = descriptionInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            const type = typeInput.value;
+            const category = categoryInput.value;
+            const dateString = dateInput.value;
+            const installments = parseInt(installmentsInput.value) || 1;
+
+            if (!description || isNaN(amount) || amount <= 0 || !category || !dateString) {
+                alert('Por favor, preencha todos os campos corretamente, incluindo a data.');
+                return;
+            }
+
+            const transactions = getTransactions();
+            const originalDate = new Date(dateString.replace(/-/g, '\/')); 
+
+            if (installments <= 1) {
+                const newTransaction = { 
+                    id: new Date().getTime(), 
+                    date: dateString, 
+                    description, 
+                    amount, 
+                    type, 
+                    category, 
+                    isPaid: false 
+                };
+                transactions.push(newTransaction);
+            } else {
+                for (let i = 0; i < installments; i++) {
+                    const installmentDate = new Date(originalDate);
+                    installmentDate.setMonth(originalDate.getMonth() + i);
+
+                    const newTransaction = {
+                        id: new Date().getTime() + i, 
+                        date: installmentDate.toISOString().slice(0, 10),
+                        description: `${description} (${i + 1}/${installments})`, 
+                        amount, 
+                        type, 
+                        category, 
+                        isPaid: false 
+                    };
+                    transactions.push(newTransaction);
+                }
+            }
+
+            saveTransactions(transactions);
+            loadApp();
+            closeAddModal();
+        }
+        
+        function loadCategoriesIntoSelect(type, selectElement, selectedCategory = null) {
+            const categories = getCategories();
+            selectElement.innerHTML = '<option value="">Selecione uma categoria</option>';
+            const categoryList = type === 'income' ? categories.receitas : categories.despesas;
+            if (categoryList) {
+                categoryList.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    selectElement.appendChild(option);
+                });
+            }
+            if (selectedCategory) {
+                selectElement.value = selectedCategory;
+            }
+        }
+
+        function saveTransactionEdit() {
+            const idToEdit = parseInt(editIdInput.value);
+            const newDescription = editDescriptionInput.value.trim();
+            const newAmount = parseFloat(editAmountInput.value);
+            const newType = editTypeInput.value;
+            const newCategory = editCategoryInput.value;
+            const newDate = editDateInput.value;
+            if (!newDescription || isNaN(newAmount) || newAmount <= 0 || !newCategory || !newDate) {
+                alert('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+            let transactions = getTransactions();
+            const transactionIndex = transactions.findIndex(t => t.id === idToEdit);
+            if (transactionIndex > -1) {
+                const originalTransaction = transactions[transactionIndex];
+                transactions[transactionIndex] = {
+                    id: idToEdit, 
+                    date: newDate, 
+                    description: newDescription, 
+                    amount: newAmount, 
+                    type: newType, 
+                    category: newCategory,
+                    isPaid: originalTransaction.isPaid
+                };
+                saveTransactions(transactions);
+                loadApp();
+                closeEditModal();
+            }
+        }
+
+        function deleteTransaction(id) {
+            let transactions = getTransactions();
+            transactions = transactions.filter(t => t.id !== id);
+            saveTransactions(transactions);
+            loadApp();
+        }
+
+        function togglePaidStatus(id) {
+            let transactions = getTransactions();
+            const transactionIndex = transactions.findIndex(t => t.id === id);
+            if (transactionIndex > -1) {
+                transactions[transactionIndex].isPaid = !transactions[transactionIndex].isPaid;
+                saveTransactions(transactions);
+                loadApp();
+            }
+        }
+
+        const openAddModal = () => {
+            descriptionInput.value = '';
+            amountInput.value = '';
+            installmentsInput.value = '';
+            typeInput.value = 'expense';
+            dateInput.value = new Date().toISOString().slice(0, 10);
+            loadCategoriesIntoSelect('expense', categoryInput);
+            addModal.style.display = 'flex';
+        };
+        const closeAddModal = () => addModal.style.display = 'none';
+
+        const openEditModal = (transaction) => {
+            editIdInput.value = transaction.id;
+            editDescriptionInput.value = transaction.description;
+            editAmountInput.value = transaction.amount;
+            editTypeInput.value = transaction.type;
+            editDateInput.value = transaction.date || new Date(transaction.id).toISOString().slice(0, 10);
+            loadCategoriesIntoSelect(transaction.type, editCategoryInput, transaction.category);
+            editModal.style.display = 'flex';
+        };
+        const closeEditModal = () => editModal.style.display = 'none';
+        
+        fab.addEventListener('click', openAddModal);
+        cancelAddBtn.addEventListener('click', closeAddModal);
+        addBtn.addEventListener('click', addTransaction);
+        typeInput.addEventListener('change', () => loadCategoriesIntoSelect(typeInput.value, categoryInput));
+        cancelEditBtn.addEventListener('click', closeEditModal);
+        saveEditBtn.addEventListener('click', saveTransactionEdit);
+        editTypeInput.addEventListener('change', () => loadCategoriesIntoSelect(editTypeInput.value, editCategoryInput));
+        
+        const handleTransactionClick = (event) => {
+            const item = event.target.closest('.transaction-item');
+            if (!item) return;
+
+            const transactionId = parseInt(item.dataset.id);
+            const transactions = getTransactions();
+            const transactionClicked = transactions.find(t => t.id === transactionId);
+
+            if (!transactionClicked) return;
+
+            if (event.target.classList.contains('delete-icon')) {
+                if (confirm(`Tem certeza que deseja apagar a transação "${transactionClicked.description}"?`)) {
+                    deleteTransaction(transactionId);
+                }
+            } else {
+                actionChoiceIdInput.value = transactionId;
+                
+                if (transactionClicked.isPaid) {
+                    actionPayBtn.textContent = 'CANCELAR PAGAMENTO';
+                    actionPayBtn.classList.add('cancel-payment');
+                } else {
+                    actionPayBtn.textContent = 'PAGAR';
+                    actionPayBtn.classList.remove('cancel-payment');
+                }
+                
+                actionChoiceModal.style.display = 'flex';
+            }
+        };
+        transactionListMonth.addEventListener('click', handleTransactionClick);
+        transactionListAll.addEventListener('click', handleTransactionClick);
+        transactionListFuture.addEventListener('click', handleTransactionClick);
+        
+        actionCancelBtn.addEventListener('click', () => actionChoiceModal.style.display = 'none');
+        actionEditBtn.addEventListener('click', () => {
+            const transactionId = parseInt(actionChoiceIdInput.value);
+            const transactionToEdit = getTransactions().find(t => t.id === transactionId);
+            if (transactionToEdit) {
+                openEditModal(transactionToEdit);
+            }
+            actionChoiceModal.style.display = 'none';
+        });
+        actionPayBtn.addEventListener('click', () => {
+            const transactionId = parseInt(actionChoiceIdInput.value);
+            if (transactionId) {
+                togglePaidStatus(transactionId);
+            }
+            actionChoiceModal.style.display = 'none';
+        });
+        
+        menuIcon.addEventListener('click', () => sideMenu.style.width = '280px');
+        closeBtn.addEventListener('click', () => sideMenu.style.width = '0');
+        
+        deleteAllDataBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('ATENÇÃO! Isso apagará PERMANENTEMENTE todas as suas transações, categorias e contas. Esta ação não pode ser desfeita. Deseja continuar?')) {
+                if (confirm('ÚTIMO AVISO: Confirma a exclusão de TODOS os dados?')) {
+                    localStorage.removeItem('transactions');
+                    localStorage.removeItem('categories');
+                    localStorage.removeItem('accounts');
+                    alert('Todos os dados foram apagados. O aplicativo será recarregado.');
+                    location.reload();
+                }
+            }
+            sideMenu.style.width = '0';
+        });
+        
+        exportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const transactions = localStorage.getItem('transactions');
+            const categories = localStorage.getItem('categories');
+            const accounts = localStorage.getItem('accounts');
+            if (!transactions && !categories && !accounts) {
+                alert('Não há dados para exportar!');
+                return;
+            }
+            const allData = {
+                transactions: JSON.parse(transactions) || [],
+                categories: JSON.parse(categories) || { despesas: [], receitas: [] },
+                accounts: JSON.parse(accounts) || []
+            };
+            const dataStr = JSON.stringify(allData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            const today = new Date().toISOString().slice(0, 10);
+            link.href = url;
+            link.download = `backup-orcamento-${today}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert('Backup exportado com sucesso!');
+            sideMenu.style.width = '0';
+        });
+
+        importBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            importFileInput.click();
+            sideMenu.style.width = '0';
+        });
+
+        importFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (confirm('Isso irá substituir TODOS os dados atuais. Deseja continuar?')) {
+                        if (importedData.transactions) {
+                            localStorage.setItem('transactions', JSON.stringify(importedData.transactions));
+                        }
+                        if (importedData.categories) {
+                            localStorage.setItem('categories', JSON.stringify(importedData.categories));
+                        }
+                        if (importedData.accounts) { 
+                            localStorage.setItem('accounts', JSON.stringify(importedData.accounts));
+                        }
+                        alert('Dados importados com sucesso! A página será recarregada.');
+                        location.reload();
+                    }
+                } catch (error) {
+                    alert('Erro ao importar o arquivo. Verifique se o arquivo de backup é válido.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        currentMonthFilter.addEventListener('change', () => loadCurrentMonthTransactions());
+        currentMonthSorter.addEventListener('change', () => loadCurrentMonthTransactions());
+        monthSelect.addEventListener('change', loadAllTransactionsFiltered);
+        yearSelect.addEventListener('change', loadAllTransactionsFiltered);
+        statusFilterAll.addEventListener('change', loadAllTransactionsFiltered);
+        sorterAll.addEventListener('change', loadAllTransactionsFiltered);
+        futureStatusFilter.addEventListener('change', () => loadFutureTransactions(getTransactions()));
+        futureSorter.addEventListener('change', () => loadFutureTransactions(getTransactions()));
+
+        window.addEventListener('scroll', () => {
+            const fabButton = document.getElementById('fab-add-transaction');
+            if (!fabButton) return;
+            const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 5;
+            if (isAtBottom) {
+                fabButton.style.transform = 'scale(0)';
+            } else {
+                fabButton.style.transform = 'scale(1)';
+            }
+        });
+
+        loadApp();
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => console.log('Service Worker registrado.', reg)).catch(err => console.log('Service Worker: Erro', err));
+            });
+        }
+    });
+    </script>
+</body>
+</html>
