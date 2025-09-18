@@ -89,7 +89,7 @@
             </div>
             <ul id="transaction-list-all" class="transaction-list"></ul>
             <div id="all-transactions-total-container" class="section-total" style="display: none;">
-                Total Filtrado: <span id="all-transactions-total-value"></span>
+                Total: <span id="all-transactions-total-value"></span>
             </div>
         </section>
 
@@ -291,6 +291,16 @@
                 yearSelect.value = lastMonthYear;
             }
             loadAllTransactionsFiltered();
+        }
+
+        // NOVA FUNÇÃO DE ATUALIZAÇÃO "SUAVE"
+        function refreshAllViews() {
+            const allTransactions = getTransactions();
+            // Atualiza os resumos e as 3 listas de transações sem resetar os filtros
+            loadCurrentMonthTransactions(allTransactions);
+            loadAllTransactionsFiltered();
+            loadFutureTransactions(allTransactions);
+            loadNextMonthSummary(allTransactions);
         }
 
         function loadCurrentMonthTransactions(transactions) {
@@ -528,7 +538,7 @@
             element.innerHTML = `
                 <option value="date_desc">${defaultText} Recentes</option>
                 <option value="date_asc">${defaultText} Antigos</option>
-                <option value="value_desc">${defaultText} Maior Valor</option>
+                <option value="value_desc" selected>${defaultText} Maior Valor</option>
                 <option value="value_asc">${defaultText} Menor Valor</option>
             `;
         }
@@ -635,7 +645,7 @@
             }
 
             saveTransactions(transactions);
-            loadApp();
+            refreshAllViews(); // MODIFICADO
             closeAddModal();
         }
         
@@ -681,7 +691,7 @@
                     isPaid: originalTransaction.isPaid
                 };
                 saveTransactions(transactions);
-                loadApp();
+                refreshAllViews(); // MODIFICADO
                 closeEditModal();
             }
         }
@@ -690,7 +700,7 @@
             let transactions = getTransactions();
             transactions = transactions.filter(t => t.id !== id);
             saveTransactions(transactions);
-            loadApp();
+            refreshAllViews(); // MODIFICADO
         }
 
         function togglePaidStatus(id) {
@@ -699,7 +709,7 @@
             if (transactionIndex > -1) {
                 transactions[transactionIndex].isPaid = !transactions[transactionIndex].isPaid;
                 saveTransactions(transactions);
-                loadApp();
+                refreshAllViews(); // MODIFICADO
             }
         }
 
