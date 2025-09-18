@@ -9,15 +9,6 @@
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div id="login-overlay">
-    <div class="login-container">
-        <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
-        <h2>Acesso Restrito</h2>
-        <p>Por favor, digite sua senha para continuar.</p>
-        <input type="password" id="password-input" placeholder="Senha">
-        <button id="login-button">Entrar</button>
-    </div>
-</div>
 
     <header>
     <a href="index.html" style="color: white; text-decoration: none;">
@@ -55,41 +46,7 @@
     </div>
 
 <script>
-    // --- CÓDIGO CORRIGIDO PARA gerenciar_categorias.html ---
     document.addEventListener('DOMContentLoaded', () => {
-
-                // --- INÍCIO DA LÓGICA DE LOGIN ---
-        const correctPassword = "]T]#6CqHSiUDnAZ9b6gt";
-        const loginOverlay = document.getElementById('login-overlay');
-        const passwordInput = document.getElementById('password-input');
-        const loginButton = document.getElementById('login-button');
-
-        // Verifica se o usuário já está logado nesta sessão
-        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-            loginOverlay.style.display = 'flex'; // Mostra a tela de bloqueio
-        } else {
-            loginOverlay.style.display = 'none'; // Esconde a tela se já estiver logado
-        }
-
-        // Função para tentar o login
-        function attemptLogin() {
-            if (passwordInput.value === correctPassword) {
-                sessionStorage.setItem('isLoggedIn', 'true'); // Marca como logado na sessão
-                loginOverlay.style.display = 'none'; // Esconde a tela de bloqueio
-            } else {
-                alert('Senha incorreta!');
-                passwordInput.value = '';
-            }
-        }
-
-        loginButton.addEventListener('click', attemptLogin);
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                attemptLogin();
-            }
-        });
-        // --- FIM DA LÓGICA DE LOGIN ---
-        
         const despesasTab = document.getElementById('despesas-tab');
         const receitasTab = document.getElementById('receitas-tab');
         const despesasList = document.getElementById('category-list-despesas');
@@ -102,15 +59,24 @@
         const categoryInput = document.getElementById('category-name-input');
         
         let activeTab = 'despesas';
+        let editingCategoryElement = null; 
 
+        // ----- FUNÇÃO MODIFICADA -----
         function loadCategories() {
             const categories = JSON.parse(localStorage.getItem('categories')) || { despesas: [], receitas: [] };
+            
+            // Limpa as listas antes de recarregar
             despesasList.innerHTML = '';
             receitasList.innerHTML = '';
+
             if (categories.despesas) {
+                // Ordena o array de despesas alfabeticamente
+                categories.despesas.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
                 categories.despesas.forEach(cat => renderCategory(cat, 'despesas'));
             }
             if (categories.receitas) {
+                // Ordena o array de receitas alfabeticamente
+                categories.receitas.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
                 categories.receitas.forEach(cat => renderCategory(cat, 'receitas'));
             }
         }
@@ -120,17 +86,17 @@
             const receitasItems = Array.from(receitasList.querySelectorAll('.category-item .name')).map(span => span.textContent);
             const categories = { despesas: despesasItems, receitas: receitasItems };
             localStorage.setItem('categories', JSON.stringify(categories));
-            console.log('Categorias salvas!', categories); // Adicionei para ajudar a depurar
         }
         
         function renderCategory(name, type) {
             const list = type === 'despesas' ? despesasList : receitasList;
             const iconClass = type === 'despesas' ? 'fa-solid fa-tag' : 'fa-solid fa-dollar-sign';
             const iconColor = type === 'despesas' ? '#546e7a' : '#2e7d32';
+            
             const itemHTML = `
                 <li class="category-item">
                     <div class="icon-container" style="background-color: ${iconColor};"><i class="${iconClass}"></i></div>
-                    <div class="category-details">
+                    <div class="category-details" style="cursor: pointer;">
                         <span class="name">${name}</span>
                     </div>
                     <i class="fa-solid fa-trash delete-icon"></i>
@@ -139,32 +105,50 @@
             list.insertAdjacentHTML('beforeend', itemHTML);
         }
 
-        function addCategory() {
+        // ----- FUNÇÃO MODIFICADA -----
+        function handleSaveCategory() {
             const categoryName = categoryInput.value.trim();
-            if (categoryName) {
-                renderCategory(categoryName, activeTab);
-                // ----- CORREÇÃO ESTÁ AQUI -----
-                saveCategories(); // Esta linha estava faltando!
-                // -----------------------------
-                closeModal();
-            } else {
+            if (!categoryName) {
                 alert('Por favor, digite um nome para a categoria.');
+                return;
             }
+
+            if (editingCategoryElement) {
+                const nameSpan = editingCategoryElement.querySelector('.name');
+                nameSpan.textContent = categoryName;
+            } else {
+                renderCategory(categoryName, activeTab);
+            }
+            
+            saveCategories();
+            loadCategories(); // Recarrega e reordena a lista na tela
+            closeModal();
         }
 
-        document.body.addEventListener('click', (event) => {
-            if (event.target.classList.contains('delete-icon')) {
-                const item = event.target.closest('.category-item');
-                if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-                    item.remove();
-                    // ----- GARANTINDO QUE SALVE AO DELETAR -----
-                    saveCategories(); // Esta linha também é crucial
-                    // ------------------------------------------
-                }
-            }
-        });
-        
-        // O resto do código (funções de abas e modal) continua o mesmo...
+        function openModalForAdd() {
+            editingCategoryElement = null; 
+            modalTitle.textContent = activeTab === 'despesas' ? 'Nova Categoria de Despesa' : 'Nova Categoria de Receita';
+            addButton.textContent = 'Adicionar';
+            modal.style.display = 'flex';
+            categoryInput.focus();
+        }
+
+        function openModalForEdit(element) {
+            editingCategoryElement = element;
+            const currentName = element.querySelector('.name').textContent;
+            modalTitle.textContent = 'Editar Categoria';
+            addButton.textContent = 'Salvar';
+            categoryInput.value = currentName;
+            modal.style.display = 'flex';
+            categoryInput.focus();
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            categoryInput.value = '';
+            editingCategoryElement = null; 
+        }
+
         function switchTab(tab) {
             activeTab = tab;
             if (tab === 'despesas') {
@@ -181,22 +165,37 @@
                 fabButton.style.backgroundColor = '#2979ff';
             }
         }
-        function closeModal() { modal.style.display = 'none'; categoryInput.value = ''; }
-        function openModal() {
-             modalTitle.textContent = activeTab === 'despesas' ? 'Nova Categoria de Despesa' : 'Nova Categoria de Receita';
-             modal.style.display = 'flex';
-             categoryInput.focus();
-        }
 
-        fabButton.addEventListener('click', openModal);
+        // --- EVENT LISTENERS ---
+
+        fabButton.addEventListener('click', openModalForAdd);
         cancelButton.addEventListener('click', closeModal);
-        addButton.addEventListener('click', addCategory);
+        addButton.addEventListener('click', handleSaveCategory);
         categoryInput.addEventListener('keypress', (e) => e.key === 'Enter' && addButton.click());
         despesasTab.addEventListener('click', () => switchTab('despesas'));
         receitasTab.addEventListener('click', () => switchTab('receitas'));
 
+        document.body.addEventListener('click', (event) => {
+            if (event.target.classList.contains('delete-icon')) {
+                const item = event.target.closest('.category-item');
+                if (confirm('Tem certeza que deseja excluir esta categoria?')) {
+                    item.remove();
+                    saveCategories();
+                    // Não precisa recarregar aqui, pois a exclusão não desordena a lista
+                }
+                return; 
+            }
+
+            const categoryDetails = event.target.closest('.category-details');
+            if (categoryDetails) {
+                const itemElement = categoryDetails.closest('.category-item');
+                openModalForEdit(itemElement);
+            }
+        });
+        
+        // --- INICIALIZAÇÃO ---
         switchTab('despesas');
-        loadCategories();
+        loadCategories(); // Esta função agora carrega as categorias já ordenadas
     });
 </script>
 
