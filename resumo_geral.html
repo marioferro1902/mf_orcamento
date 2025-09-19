@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumo Geral</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        /* Estilos específicos para esta página */
+        .year-selector-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #year-selector {
+            padding: 10px;
+            font-size: 1.1em;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+        .monthly-summary .month-title {
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        .summary-line.total-line {
+            font-weight: bold;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" style="color: white; text-decoration: none;">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <h1>MF ORÇAMENTO - Resumo Geral</h1>
+        <i class="fa-solid fa-calendar-days"></i>
+    </header>
+
+    <main>
+        <section class="card year-selector-container">
+            <h2>Selecione o Ano</h2>
+            <select id="year-selector"></select>
+        </section>
+
+        <div id="monthly-summary-container">
+            </div>
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const yearSelector = document.getElementById('year-selector');
+        const summaryContainer = document.getElementById('monthly-summary-container');
+
+        const getTransactions = () => JSON.parse(localStorage.getItem('transactions')) || [];
+
+        function getTransactionDate(t) {
+            let dateValue = t.date || t.id;
+            if (typeof dateValue === 'string') {
+                dateValue = dateValue.replace(/-/g, '\/');
+            }
+            return new Date(dateValue);
+        }
+
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function populateYearSelector(transactions) {
+            const years = new Set();
+            transactions.forEach(t => {
+                const transactionDate = getTransactionDate(t);
+                years.add(transactionDate.getFullYear());
+            });
+
+            if (years.size === 0) {
+                years.add(new Date().getFullYear());
+            }
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+            
+            yearSelector.innerHTML = '';
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelector.appendChild(option);
+            });
+
+            const currentYear = new Date().getFullYear();
+            if (sortedYears.includes(currentYear)) {
+                yearSelector.value = currentYear;
+            }
+        }
+
+        function generateMonthlySummaries(year) {
+            summaryContainer.innerHTML = '';
+            const transactions = getTransactions().filter(t => {
+                const transactionDate = getTransactionDate(t);
+                return transactionDate.getFullYear() === parseInt(year);
+            });
+
+            const monthlyData = Array(12).fill(null).map(() => ({ receitas: 0, despesas: 0 }));
+
+            transactions.forEach(t => {
+                const month = getTransactionDate(t).getMonth();
+                if (t.type === 'income') {
+                    monthlyData[month].receitas += t.amount;
+                } else {
+                    monthlyData[month].despesas += t.amount;
+                }
+            });
+
+            // ----- MUDANÇA ESTÁ AQUI -----
+            // Gera o HTML para cada mês, em ordem crescente (Janeiro a Dezembro)
+            for (let i = 0; i < 12; i++) {
+                const data = monthlyData[i];
+                const total = data.receitas - data.despesas;
+                
+                const monthName = new Date(year, i).toLocaleString('pt-BR', { month: 'long' });
+                const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+                const cardHTML = `
+                    <section class="card monthly-summary">
+                        <h2 class="month-title">${capitalizedMonthName} ${year}</h2>
+                        <div class="summary-line">
+                            <span>Receitas:</span>
+                            <span class="income">${formatCurrency(data.receitas)}</span>
+                        </div>
+                        <div class="summary-line">
+                            <span>Despesas:</span>
+                            <span class="expense">-${formatCurrency(data.despesas)}</span>
+                        </div>
+                        <div class="summary-line total-line">
+                            <span>Total:</span>
+                            <span class="${total >= 0 ? 'income' : 'expense'}">${formatCurrency(total)}</span>
+                        </div>
+                    </section>
+                `;
+                summaryContainer.insertAdjacentHTML('beforeend', cardHTML);
+            }
+        }
+
+        function init() {
+            const allTransactions = getTransactions();
+            populateYearSelector(allTransactions);
+            
+            const selectedYear = yearSelector.value;
+            if (selectedYear) {
+                generateMonthlySummaries(selectedYear);
+            }
+        }
+
+        yearSelector.addEventListener('change', () => {
+            generateMonthlySummaries(yearSelector.value);
+        });
+
+        init();
+    });
+    </script>
+</body>
+</html>
