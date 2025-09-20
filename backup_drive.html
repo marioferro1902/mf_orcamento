@@ -1,226 +1,216 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backup no Google Drive</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Backup no Google Drive</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="manifest" href="manifest.json"/>
+
+  <!-- PRÉ-CARREGAR as bibliotecas -->
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+  <header>
+    <a href="index.html" style="color:white;text-decoration:none;"><i class="fa-solid fa-arrow-left"></i></a>
+    <h1>Backup no Google Drive</h1>
+    <i class="fa-brands fa-google-drive"></i>
+  </header>
 
-    <header>
-        <a href="index.html" style="color: white; text-decoration: none;">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h1>Backup no Google Drive</h1>
-        <i class="fa-brands fa-google-drive"></i>
-    </header>
+  <main>
+    <section class="card">
+      <h2>Salvar Backup na Nuvem</h2>
+      <p>Clique para autorizar e salvar seus dados no Google Drive (pasta "Backup MF Orçamento").</p>
+      <button id="auth-backup-button" style="width:100%;padding:12px;font-size:1.1em;">Autorizar e Fazer Backup</button>
+      <button id="revoke-button" style="width:100%;padding:12px;font-size:1.1em;display:none;background-color:#ef5350;margin-top:10px;">Desconectar / Revogar Acesso</button>
+      <div id="status" style="margin-top:20px;text-align:center;font-weight:bold;"></div>
+    </section>
+  </main>
 
-    <main>
-        <section class="card">
-            <h2>Salvar Backup na Nuvem</h2>
-            <p>Clique no botão para autorizar o acesso e salvar uma cópia segura dos seus dados no seu Google Drive. Uma pasta chamada "Backup MF Orçamento" será criada.</p>
-            
-            <button id="auth-backup-button" style="width: 100%; padding: 12px; font-size: 1.1em;">Autorizar e Fazer Backup</button>
-            <button id="revoke-button" style="width: 100%; padding: 12px; font-size: 1.1em; display: none; background-color: #ef5350; margin-top: 10px;">Desconectar / Revogar Acesso</button>
+  <script>
+    // ======= CONFIG =======
+    const CLIENT_ID = '665704691318-r51olsj24q86sb8htcho1eaj0v583af8.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+    const FOLDER_NAME = "Backup MF Orçamento";
 
-            <div id="status" style="margin-top: 20px; text-align: center; font-weight: bold;"></div>
-        </section>
-    </main>
-    
-    <script>
-        const CLIENT_ID = '665704691318-r51olsj24q86sb8htcho1eaj0v583af8.apps.googleusercontent.com';
-        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    // ======= ELEMENTOS UI =======
+    const authBackupButton = document.getElementById('auth-backup-button');
+    const revokeButton = document.getElementById('revoke-button');
+    const statusDiv = document.getElementById('status');
 
-        const authBackupButton = document.getElementById('auth-backup-button');
-        const revokeButton = document.getElementById('revoke-button');
-        const statusDiv = document.getElementById('status');
-        const FOLDER_NAME = "Backup MF Orçamento";
+    // ======= ESTADO =======
+    let tokenClient;
+    let gapiReady = false;
+    let gisReady = false;
+    let isAuthorized = false;
 
-        let tokenClient;
-        let areLibsLoaded = false;
-        let isAuthorized = false;
+    statusDiv.textContent = 'Pronto para iniciar.';
 
-        statusDiv.textContent = 'Pronto para iniciar.';
-
-        function loadScript(src, onloadCallback) {
-            const script = document.createElement('script');
-            script.src = src;
-            script.async = true;
-            script.defer = true;
-            script.onload = onloadCallback;
-            document.head.appendChild(script);
+    // ======= INICIALIZAÇÃO GAPI =======
+    window.addEventListener('load', () => {
+      gapi.load('client', async () => {
+        try {
+          await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+          gapiReady = true;
+        } catch (e) {
+          console.error('Falha init gapi:', e);
+          statusDiv.textContent = 'Erro ao carregar Google API.';
         }
-        
-        authBackupButton.addEventListener('click', () => {
-            if (isAuthorized) {
-                backupDataToDrive();
-            } else if (!areLibsLoaded) {
-                statusDiv.textContent = 'Carregando bibliotecas do Google...';
-                authBackupButton.disabled = true;
-                
-                loadScript("https://apis.google.com/js/api.js", gapiLoaded);
-                loadScript("https://accounts.google.com/gsi/client", gisLoaded);
-            }
-        });
+      });
+    });
 
-        let gapiInited = false;
-        let gisInited = false;
-
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        async function initializeGapiClient() {
-            await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
-            gapiInited = true;
-            triggerAuthIfReady();
-        }
-
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: handleAuthResponse,
-            });
-            gisInited = true;
-            triggerAuthIfReady();
-        }
-        
-        function triggerAuthIfReady() {
-            if (gapiInited && gisInited) {
-                statusDiv.textContent = 'Bibliotecas carregadas. Pedindo autorização...';
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            }
-        }
-
-        function handleAuthResponse(response) {
+    // ======= INICIALIZAÇÃO GIS =======
+    window.addEventListener('load', () => {
+      try {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: (response) => {
             authBackupButton.disabled = false;
-            if (response.error) {
-                statusDiv.textContent = 'Erro de autorização. Tente novamente.';
-                console.error(response.error);
-                return;
-            }
-            statusDiv.textContent = 'Autorizado com sucesso! Clique para fazer o backup.';
-            authBackupButton.textContent = 'Fazer Novo Backup';
-            revokeButton.style.display = 'block';
-            isAuthorized = true;
-        }
 
-        revokeButton.addEventListener('click', () => {
-            let token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token, () => {
-                    gapi.client.setToken('');
-                    statusDiv.textContent = 'Acesso revogado.';
-                    authBackupButton.textContent = 'Autorizar e Fazer Backup';
-                    revokeButton.style.display = 'none';
-                    isAuthorized = false;
-                });
+            if (response.error) {
+              console.error(response.error);
+              statusDiv.textContent = 'Erro de autorização. Tente novamente.';
+              return;
             }
+
+            // >>> ESSENCIAL: aplicar o token no gapi <<<
+            gapi.client.setToken({ access_token: response.access_token });
+
+            isAuthorized = true;
+            revokeButton.style.display = 'block';
+            authBackupButton.textContent = 'Fazer Novo Backup';
+            statusDiv.textContent = 'Autorizado! Clique novamente para fazer o backup.';
+          },
+        });
+        gisReady = true;
+      } catch (e) {
+        console.error('Falha init GIS:', e);
+        statusDiv.textContent = 'Erro ao carregar Google Identity.';
+      }
+    });
+
+    // ======= CLIQUE DO BOTÃO: gesto do usuário =======
+    authBackupButton.addEventListener('click', async () => {
+      if (!(gapiReady && gisReady)) {
+        statusDiv.textContent = 'Carregando bibliotecas do Google...';
+        authBackupButton.disabled = true;
+        setTimeout(() => { authBackupButton.disabled = false; }, 1200);
+        return;
+      }
+
+      if (!isAuthorized) {
+        // Solicitar token DENTRO do gesto do usuário
+        statusDiv.textContent = 'Pedindo autorização...';
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+        return;
+      }
+
+      // Já autorizado: prosseguir para o backup
+      backupDataToDrive();
+    });
+
+    // ======= REVOGAR =======
+    revokeButton.addEventListener('click', () => {
+      const tok = gapi.client.getToken();
+      if (!tok || !tok.access_token) return;
+
+      google.accounts.oauth2.revoke(tok.access_token, () => {
+        gapi.client.setToken('');
+        isAuthorized = false;
+        revokeButton.style.display = 'none';
+        authBackupButton.textContent = 'Autorizar e Fazer Backup';
+        statusDiv.textContent = 'Acesso revogado.';
+      });
+    });
+
+    // ======= BACKUP =======
+    async function backupDataToDrive() {
+      try {
+        statusDiv.textContent = 'Procurando/CRIANDO pasta de backup...';
+        const folderId = await findOrCreateFolder();
+        if (!folderId) return;
+
+        statusDiv.textContent = 'Preparando dados...';
+        const backupData = collectBackupData();
+
+        const ts = new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+        const uniqueFileName = `backup-orcamento-${ts}.json`;
+
+        const fileMetadata = { name: uniqueFileName, parents: [folderId], mimeType: 'application/json' };
+
+        const boundary = '-------314159265358979323846';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
+
+        const multipartRequestBody =
+          delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+          JSON.stringify(fileMetadata) +
+          delimiter + 'Content-Type: application/json\r\n\r\n' +
+          backupData + close_delim;
+
+        statusDiv.textContent = 'Enviando arquivo ao Drive...';
+
+        const response = await gapi.client.request({
+          path: 'https://www.googleapis.com/upload/drive/v3/files',
+          method: 'POST',
+          params: { uploadType: 'multipart' },
+          headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
+          body: multipartRequestBody
         });
 
-        // ----- FUNÇÃO DE BACKUP CORRIGIDA PARA ENVIO MULTIPART -----
-        async function backupDataToDrive() {
-            try {
-                statusDiv.textContent = 'Procurando pela pasta de backup...';
-                const folderId = await findOrCreateFolder();
-                if (!folderId) return;
-
-                statusDiv.textContent = 'Preparando os dados...';
-                const backupData = collectBackupData();
-
-                const today = new Date();
-                const timestamp = today.toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
-                const uniqueFileName = `backup-orcamento-${timestamp}.json`;
-
-                const fileMetadata = {
-                    name: uniqueFileName,
-                    parents: [folderId],
-                    mimeType: 'application/json'
-                };
-
-                // Cria o corpo da requisição multipart
-                const boundary = '-------314159265358979323846';
-                const delimiter = "\r\n--" + boundary + "\r\n";
-                const close_delim = "\r\n--" + boundary + "--";
-
-                const multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(fileMetadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    backupData +
-                    close_delim;
-
-                statusDiv.textContent = 'Criando novo arquivo de backup...';
-
-                // Envia a requisição usando um formato mais explícito
-                const response = await gapi.client.request({
-                    path: 'https://www.googleapis.com/upload/drive/v3/files',
-                    method: 'POST',
-                    params: { uploadType: 'multipart' },
-                    headers: {
-                        'Content-Type': 'multipart/related; boundary="' + boundary + '"'
-                    },
-                    body: multipartRequestBody
-                });
-
-                console.log("Resposta da API do Google:", response);
-
-                if (response.status === 200 && response.result) {
-                    statusDiv.textContent = `Backup "${response.result.name}" realizado com sucesso!`;
-                } else {
-                    statusDiv.textContent = 'Erro: A API não confirmou a criação do arquivo.';
-                    console.error("Resposta inesperada da API:", response);
-                }
-
-            } catch (error) {
-                statusDiv.textContent = 'Erro durante o backup: ' + (error.result ? error.result.error.message : error.message);
-                console.error("Erro capturado no bloco catch:", error);
-            }
+        if (response.status === 200 && response.result) {
+          statusDiv.textContent = `Backup "${response.result.name}" realizado com sucesso!`;
+        } else {
+          statusDiv.textContent = 'Erro: a API não confirmou a criação do arquivo.';
+          console.error('Resposta inesperada:', response);
         }
+      } catch (error) {
+        const msg = error?.result?.error?.message || error.message || String(error);
+        statusDiv.textContent = 'Erro durante o backup: ' + msg;
+        console.error('Erro no backup:', error);
+      }
+    }
 
-        function collectBackupData() {
-            const transactions = localStorage.getItem('transactions');
-            const categories = localStorage.getItem('categories');
-            const accounts = localStorage.getItem('accounts');
-            const allData = {
-                transactions: JSON.parse(transactions) || [],
-                categories: JSON.parse(categories) || { despesas: [], receitas: [] },
-                accounts: JSON.parse(accounts) || [],
-                lastBackup: new Date().toISOString()
-            };
-            return JSON.stringify(allData, null, 2);
-        }
+    function collectBackupData() {
+      const transactions = localStorage.getItem('transactions');
+      const categories = localStorage.getItem('categories');
+      const accounts = localStorage.getItem('accounts');
+      const allData = {
+        transactions: JSON.parse(transactions) || [],
+        categories: JSON.parse(categories) || { despesas: [], receitas: [] },
+        accounts: JSON.parse(accounts) || [],
+        lastBackup: new Date().toISOString(),
+      };
+      return JSON.stringify(allData, null, 2);
+    }
 
-        async function findOrCreateFolder() {
-            try {
-                let response = await gapi.client.drive.files.list({
-                    q: `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                    fields: 'files(id, name)'
-                });
-                if (response.result.files.length > 0) {
-                    return response.result.files[0].id;
-                } else {
-                    statusDiv.textContent = 'Pasta de backup não encontrada. Criando...';
-                    response = await gapi.client.drive.files.create({
-                        resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
-                        fields: 'id'
-                    });
-                    return response.result.id;
-                }
-            } catch (error) {
-                 statusDiv.textContent = 'Erro ao procurar pasta: ' + (error.result ? error.result.error.message : error.message);
-                 console.error("Erro em findOrCreateFolder:", error);
-                 return null;
-            }
-        }
-    </script>
+    async function findOrCreateFolder() {
+      try {
+        // Procurar pasta
+        let resp = await gapi.client.drive.files.list({
+          q: `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+          fields: 'files(id,name)'
+        });
+        if (resp.result.files?.length) return resp.result.files[0].id;
 
+        // Criar pasta
+        statusDiv.textContent = 'Pasta não encontrada. Criando...';
+        resp = await gapi.client.drive.files.create({
+          resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
+          fields: 'id'
+        });
+        return resp.result.id;
+      } catch (e) {
+        const msg = e?.result?.error?.message || e.message || String(e);
+        statusDiv.textContent = 'Erro ao procurar/criar pasta: ' + msg;
+        console.error('findOrCreateFolder:', e);
+        return null;
+      }
+    }
+  </script>
 </body>
 </html>
