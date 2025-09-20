@@ -1,31 +1,41 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Backup no Google Drive</title>
   <link rel="stylesheet" href="style.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
   <link rel="manifest" href="manifest.json"/>
 
-  <!-- PRÉ-CARREGAR as bibliotecas -->
+  <!-- PRÉ-CARREGAR as bibliotecas (evita perder o gesto do usuário) -->
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin:0; }
+    header { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#1e88e5; color:#fff; }
+    main { padding:16px; max-width:680px; margin:0 auto; }
+    .card { background:#fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; }
+    button { width:100%; padding:12px; font-size:16px; border:0; border-radius:10px; cursor:pointer; }
+    #auth { background:#1e88e5; color:#fff; }
+    #revoke { background:#ef5350; color:#fff; margin-top:10px; display:none; }
+    #status { margin-top:16px; text-align:center; font-weight:600; }
+  </style>
 </head>
 <body>
   <header>
-    <a href="index.html" style="color:white;text-decoration:none;"><i class="fa-solid fa-arrow-left"></i></a>
-    <h1>Backup no Google Drive</h1>
-    <i class="fa-brands fa-google-drive"></i>
+    <h1 style="margin:0;font-size:18px;">Backup no Google Drive</h1>
   </header>
 
   <main>
     <section class="card">
-      <h2>Salvar Backup na Nuvem</h2>
-      <p>Clique para autorizar e salvar seus dados no Google Drive (pasta "Backup MF Orçamento").</p>
-      <button id="auth-backup-button" style="width:100%;padding:12px;font-size:1.1em;">Autorizar e Fazer Backup</button>
-      <button id="revoke-button" style="width:100%;padding:12px;font-size:1.1em;display:none;background-color:#ef5350;margin-top:10px;">Desconectar / Revogar Acesso</button>
-      <div id="status" style="margin-top:20px;text-align:center;font-weight:bold;"></div>
+      <h2 style="margin-top:0;">Salvar Backup na Nuvem</h2>
+      <p>Clique para autorizar e salvar seus dados na pasta <b>"Backup MF Orçamento"</b> no seu Drive.</p>
+
+      <button id="auth">Autorizar e Fazer Backup</button>
+      <button id="revoke">Desconectar / Revogar Acesso</button>
+
+      <div id="status">Pronto para iniciar.</div>
     </section>
   </main>
 
@@ -36,9 +46,9 @@
     const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
     const FOLDER_NAME = "Backup MF Orçamento";
 
-    // ======= ELEMENTOS UI =======
-    const authBackupButton = document.getElementById('auth-backup-button');
-    const revokeButton = document.getElementById('revoke-button');
+    // ======= ELEMENTOS =======
+    const btnAuth = document.getElementById('auth');
+    const btnRevoke = document.getElementById('revoke');
     const statusDiv = document.getElementById('status');
 
     // ======= ESTADO =======
@@ -49,7 +59,7 @@
 
     statusDiv.textContent = 'Pronto para iniciar.';
 
-    // ======= INICIALIZAÇÃO GAPI =======
+    // ======= INIT GAPI =======
     window.addEventListener('load', () => {
       gapi.load('client', async () => {
         try {
@@ -62,14 +72,16 @@
       });
     });
 
-    // ======= INICIALIZAÇÃO GIS =======
+    // ======= INIT GIS (Token Flow + FedCM) =======
     window.addEventListener('load', () => {
       try {
         tokenClient = google.accounts.oauth2.initTokenClient({
           client_id: CLIENT_ID,
           scope: SCOPES,
+          // FedCM ajuda no PWA com cookies de 3ª parte bloqueados
+          use_fedcm_for_prompt: true,
           callback: (response) => {
-            authBackupButton.disabled = false;
+            btnAuth.disabled = false;
 
             if (response.error) {
               console.error(response.error);
@@ -77,12 +89,12 @@
               return;
             }
 
-            // >>> ESSENCIAL: aplicar o token no gapi <<<
+            // >>> ESSENCIAL: aplica o token ao gapi <<<
             gapi.client.setToken({ access_token: response.access_token });
 
             isAuthorized = true;
-            revokeButton.style.display = 'block';
-            authBackupButton.textContent = 'Fazer Novo Backup';
+            btnRevoke.style.display = 'block';
+            btnAuth.textContent = 'Fazer Novo Backup';
             statusDiv.textContent = 'Autorizado! Clique novamente para fazer o backup.';
           },
         });
@@ -93,36 +105,38 @@
       }
     });
 
-    // ======= CLIQUE DO BOTÃO: gesto do usuário =======
-    authBackupButton.addEventListener('click', async () => {
+    // ======= CLIQUE (gesto do usuário) =======
+    btnAuth.addEventListener('click', async () => {
       if (!(gapiReady && gisReady)) {
         statusDiv.textContent = 'Carregando bibliotecas do Google...';
-        authBackupButton.disabled = true;
-        setTimeout(() => { authBackupButton.disabled = false; }, 1200);
+        btnAuth.disabled = true;
+        setTimeout(() => { btnAuth.disabled = false; }, 1200);
         return;
       }
 
       if (!isAuthorized) {
-        // Solicitar token DENTRO do gesto do usuário
+        // Solicitar token DENTRO do clique (evita bloqueio em PWA)
         statusDiv.textContent = 'Pedindo autorização...';
-        tokenClient.requestAccessToken({ prompt: 'consent' });
+        btnAuth.disabled = true;
+        // prompt:'' evita reconsent desnecessário e funciona melhor com FedCM
+        tokenClient.requestAccessToken({ prompt: '' });
         return;
       }
 
-      // Já autorizado: prosseguir para o backup
+      // Já autorizado → executa backup
       backupDataToDrive();
     });
 
     // ======= REVOGAR =======
-    revokeButton.addEventListener('click', () => {
+    btnRevoke.addEventListener('click', () => {
       const tok = gapi.client.getToken();
       if (!tok || !tok.access_token) return;
 
       google.accounts.oauth2.revoke(tok.access_token, () => {
         gapi.client.setToken('');
         isAuthorized = false;
-        revokeButton.style.display = 'none';
-        authBackupButton.textContent = 'Autorizar e Fazer Backup';
+        btnRevoke.style.display = 'none';
+        btnAuth.textContent = 'Autorizar e Fazer Backup';
         statusDiv.textContent = 'Acesso revogado.';
       });
     });
@@ -134,7 +148,7 @@
         const folderId = await findOrCreateFolder();
         if (!folderId) return;
 
-        statusDiv.textContent = 'Preparando dados...';
+        statusDiv.textContent = 'Preparando os dados...';
         const backupData = collectBackupData();
 
         const ts = new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
