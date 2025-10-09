@@ -12,9 +12,8 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
-    /* Estilos originais da página de backup mantidos */
     body { font-family: system-ui, Arial, sans-serif; margin:0; }
-    .backup-header { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#1e88e5; color:#fff; }
+    header { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#1e88e5; color:#fff; }
     main { padding:16px; max-width:680px; margin:0 auto; }
     .card { background:#fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; }
     button { width:100%; padding:12px; font-size:16px; border:0; border-radius:10px; cursor:pointer; }
@@ -24,26 +23,25 @@
   </style>
 </head>
 <body>
-
-  <!-- TELA DE LOGIN ADICIONADA -->
-  <div id="login-overlay">
-    <div class="login-container">
-        <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
-        <h2 id="auth-title">Acesso Restrito</h2>
-        <p id="auth-message">Por favor, digite sua senha para continuar.</p>
-        <div class="auth-inputs">
-            <input type="password" id="password-input" placeholder="Senha">
-            <input type="password" id="password-confirm-input" placeholder="Confirme a Senha" style="display: none;">
+    <div id="login-overlay">
+        <div class="login-container">
+            <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+            <h2 id="auth-title">Acesso Restrito</h2>
+            <p id="auth-message">Por favor, digite sua senha para continuar.</p>
+            <div class="auth-inputs">
+                <input type="password" id="password-input" placeholder="Senha">
+                <input type="password" id="password-confirm-input" placeholder="Confirme a Senha" style="display: none;">
+            </div>
+             <div class="forgot-password-container" style="display: none;">
+                 <a href="#" id="forgot-password-link">Esqueceu a senha?</a>
+            </div>
+             <p id="auth-error" style="color: #c62828; display: none; margin-top: 10px;"></p>
+            <button id="auth-button">Entrar</button>
         </div>
-         <p id="auth-error" style="color: #c62828; display: none; margin-top: 10px;"></p>
-        <button id="auth-button">Entrar</button>
     </div>
-  </div>
 
-  <header class="backup-header">
-    <a href="index.html" style="color: white; text-decoration: none; font-size: 1.5em;">
-        &larr;
-    </a>
+  <header>
+    <a href="index.html" style="color: white; text-decoration: none; font-size: 1.5em;"> &larr; </a>
     <h1 style="margin:0;font-size:18px;">Backup no Google Drive</h1>
   </header>
 
@@ -61,7 +59,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- LÓGICA DE LOGIN ---
         const USER_STORAGE_KEY = 'mf-orcamento-user';
         const loginOverlay = document.getElementById('login-overlay');
         const passwordInput = document.getElementById('password-input');
@@ -70,23 +67,23 @@
         const authTitle = document.getElementById('auth-title');
         const authMessage = document.getElementById('auth-message');
         const authError = document.getElementById('auth-error');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const forgotPasswordContainer = forgotPasswordLink.parentElement;
 
         function getUserCredentials() {
-            const data = localStorage.getItem(USER_STORAGE_KEY);
-            return data ? JSON.parse(data) : null;
+            return JSON.parse(localStorage.getItem(USER_STORAGE_KEY));
         }
 
         function handleLogin() {
             const credentials = getUserCredentials();
             if (!credentials) {
-                // Se não há credenciais, redireciona para a página principal para cadastro
                 window.location.href = './index.html';
                 return;
             }
             if (passwordInput.value === credentials.password) {
                 sessionStorage.setItem('isLoggedIn', 'true');
                 loginOverlay.style.display = 'none';
-                initializeBackupApp(); 
+                initializeApp(); 
             } else {
                 authError.textContent = 'Senha incorreta!';
                 authError.style.display = 'block';
@@ -103,21 +100,33 @@
                 authButton.textContent = 'Entrar';
                 authButton.onclick = handleLogin;
                 passwordInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
+                forgotPasswordContainer.style.display = 'block';
             } else {
                  window.location.href = './index.html';
             }
         }
         
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Tem certeza que deseja resetar sua senha? ATENÇÃO: Isso apagará TODOS os seus dados. Esta ação não pode ser desfeita.')) {
+                if (confirm('ÚLTIMO AVISO: Todos os dados serão perdidos. Deseja continuar?')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    alert('Dados apagados. O app será recarregado.');
+                    location.reload();
+                }
+            }
+        });
+
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
             loginOverlay.style.display = 'flex';
             setupAuthScreen();
         } else {
             loginOverlay.style.display = 'none';
-            initializeBackupApp();
+            initializeApp();
         }
 
-        // --- INICIALIZAÇÃO DA LÓGICA DE BACKUP ---
-        function initializeBackupApp() {
+        function initializeApp() {
             const CLIENT_ID = '665704691318-r51olsj24q86sb8htcho1eaj0v583af8.apps.googleusercontent.com';
             const SCOPES = 'https://www.googleapis.com/auth/drive.file';
             const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
@@ -133,7 +142,7 @@
             let isAuthorized = false;
 
             statusDiv.textContent = 'Pronto para iniciar.';
-            
+
             gapi.load('client', async () => {
                 try {
                 await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
@@ -248,7 +257,6 @@
                 const allData = {};
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
-                    // Não incluir a própria senha no backup por segurança
                     if(key !== USER_STORAGE_KEY) {
                         allData[key] = JSON.parse(localStorage.getItem(key));
                     }
