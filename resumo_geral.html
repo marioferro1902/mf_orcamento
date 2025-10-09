@@ -8,41 +8,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <style>
-        /* Estilos específicos para esta página */
-        .year-selector-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #year-selector {
-            padding: 10px;
-            font-size: 1.1em;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            background-color: #f9f9f9;
-        }
-        .monthly-summary .month-title {
-            margin-top: 0;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            font-size: 1.2em;
-        }
-        .summary-line {
-            display: flex;
-            justify-content: space-between;
-            font-size: 1.1em;
-            margin-bottom: 8px;
-        }
-        .summary-line.total-line {
-            font-weight: bold;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
+        .year-selector-container { display: flex; flex-direction: column; gap: 10px; }
+        #year-selector { padding: 10px; font-size: 1.1em; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; }
+        .monthly-summary .month-title { margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 1.2em; }
+        .summary-line { display: flex; justify-content: space-between; font-size: 1.1em; margin-bottom: 8px; }
+        .summary-line.total-line { font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
     </style>
 </head>
 <body>
+    <div id="login-overlay">
+        <div class="login-container">
+            <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+            <h2 id="auth-title">Acesso Restrito</h2>
+            <p id="auth-message">Por favor, digite sua senha para continuar.</p>
+            <div class="auth-inputs">
+                <input type="password" id="password-input" placeholder="Senha">
+            </div>
+            <p id="auth-error" style="color: #c62828; display: none; margin-top: 10px;"></p>
+            <button id="auth-button">Entrar</button>
+        </div>
+    </div>
 
     <header>
         <a href="index.html" style="color: white; text-decoration: none;">
@@ -59,11 +44,55 @@
         </section>
 
         <div id="monthly-summary-container">
-            </div>
+        </div>
     </main>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- INÍCIO DA LÓGICA DE LOGIN ---
+        const USER_STORAGE_KEY = 'mf-orcamento-user';
+        const loginOverlay = document.getElementById('login-overlay');
+        const passwordInput = document.getElementById('password-input');
+        const authButton = document.getElementById('auth-button');
+        const authError = document.getElementById('auth-error');
+
+        function getUserCredentials() {
+            const data = localStorage.getItem(USER_STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        }
+
+        function handleLogin() {
+            const credentials = getUserCredentials();
+            if (passwordInput.value === credentials.password) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                loginOverlay.style.display = 'none';
+                initializeApp(); // Inicia o app após o login
+            } else {
+                authError.textContent = 'Senha incorreta!';
+                authError.style.display = 'block';
+                passwordInput.value = '';
+            }
+        }
+        
+        function setupAuthScreen() {
+            const credentials = getUserCredentials();
+            if (credentials) {
+                authButton.onclick = handleLogin;
+                passwordInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            loginOverlay.style.display = 'flex';
+            setupAuthScreen();
+        } else {
+            loginOverlay.style.display = 'none';
+        }
+        // --- FIM DA LÓGICA DE LOGIN ---
+
         const yearSelector = document.getElementById('year-selector');
         const summaryContainer = document.getElementById('monthly-summary-container');
 
@@ -126,8 +155,6 @@
                 }
             });
 
-            // ----- MUDANÇA ESTÁ AQUI -----
-            // Gera o HTML para cada mês, em ordem crescente (Janeiro a Dezembro)
             for (let i = 0; i < 12; i++) {
                 const data = monthlyData[i];
                 const total = data.receitas - data.despesas;
@@ -156,7 +183,7 @@
             }
         }
 
-        function init() {
+        function initializeApp() {
             const allTransactions = getTransactions();
             populateYearSelector(allTransactions);
             
@@ -164,13 +191,16 @@
             if (selectedYear) {
                 generateMonthlySummaries(selectedYear);
             }
+
+            yearSelector.addEventListener('change', () => {
+                generateMonthlySummaries(yearSelector.value);
+            });
+        }
+        
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            initializeApp();
         }
 
-        yearSelector.addEventListener('change', () => {
-            generateMonthlySummaries(yearSelector.value);
-        });
-
-        init();
     });
     </script>
 </body>

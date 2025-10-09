@@ -10,21 +10,25 @@
 </head>
 <body>
     <div id="login-overlay">
-    <div class="login-container">
-        <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
-        <h2>Acesso Restrito</h2>
-        <p>Por favor, digite sua senha para continuar.</p>
-        <input type="password" id="password-input" placeholder="Senha">
-        <button id="login-button">Entrar</button>
+        <div class="login-container">
+            <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+            <h2 id="auth-title">Acesso Restrito</h2>
+            <p id="auth-message">Por favor, digite sua senha para continuar.</p>
+            <div class="auth-inputs">
+                <input type="password" id="password-input" placeholder="Senha">
+                <input type="password" id="password-confirm-input" placeholder="Confirme a Senha" style="display: none;">
+            </div>
+             <p id="auth-error" style="color: #c62828; display: none; margin-top: 10px;"></p>
+            <button id="auth-button">Entrar</button>
+        </div>
     </div>
-</div>
 
     <header>
         <a href="index.html" style="color: white; text-decoration: none;">
             <i class="fa-solid fa-arrow-left"></i>
         </a>
         <h1>Contas</h1>
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <i class="fa-solid fa-magnifying-glass" style="opacity: 0;"></i>
     </header>
 
     <main>
@@ -64,39 +68,63 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-                // --- INÍCIO DA LÓGICA DE LOGIN ---
-        const correctPassword = "]T]#6CqHSiUDnAZ9b6gt";
+        // --- INÍCIO DA LÓGICA DE LOGIN ---
+        const USER_STORAGE_KEY = 'mf-orcamento-user';
         const loginOverlay = document.getElementById('login-overlay');
         const passwordInput = document.getElementById('password-input');
-        const loginButton = document.getElementById('login-button');
+        const passwordConfirmInput = document.getElementById('password-confirm-input');
+        const authButton = document.getElementById('auth-button');
+        const authTitle = document.getElementById('auth-title');
+        const authMessage = document.getElementById('auth-message');
+        const authError = document.getElementById('auth-error');
 
-        // Verifica se o usuário já está logado nesta sessão
-        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-            loginOverlay.style.display = 'flex'; // Mostra a tela de bloqueio
-        } else {
-            loginOverlay.style.display = 'none'; // Esconde a tela se já estiver logado
+        function getUserCredentials() {
+            const data = localStorage.getItem(USER_STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
         }
 
-        // Função para tentar o login
-        function attemptLogin() {
-            if (passwordInput.value === correctPassword) {
-                sessionStorage.setItem('isLoggedIn', 'true'); // Marca como logado na sessão
-                loginOverlay.style.display = 'none'; // Esconde a tela de bloqueio
+        function handleLogin() {
+            const credentials = getUserCredentials();
+            if (passwordInput.value === credentials.password) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                loginOverlay.style.display = 'none';
+                initializeApp(); // Carrega o conteúdo da página após login
             } else {
-                alert('Senha incorreta!');
+                authError.textContent = 'Senha incorreta!';
+                authError.style.display = 'block';
                 passwordInput.value = '';
             }
         }
+        
+        function handleRegistration() {
+            // Se o usuário está nesta página e não tem senha,
+            // redireciona para a principal para poder cadastrar.
+            window.location.href = './index.html';
+        }
 
-        loginButton.addEventListener('click', attemptLogin);
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                attemptLogin();
+        function setupAuthScreen() {
+            const credentials = getUserCredentials();
+            if (credentials) {
+                authTitle.textContent = 'Acesso Restrito';
+                authMessage.textContent = 'Por favor, digite sua senha para continuar.';
+                passwordConfirmInput.style.display = 'none';
+                authButton.textContent = 'Entrar';
+                authButton.onclick = handleLogin;
+                passwordInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
+            } else {
+                // Se não existe usuário, a única opção segura é ir para a página principal
+                handleRegistration();
             }
-        });
+        }
+
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            loginOverlay.style.display = 'flex';
+            setupAuthScreen();
+        } else {
+            loginOverlay.style.display = 'none';
+        }
         // --- FIM DA LÓGICA DE LOGIN ---
         
-        // --- SELEÇÃO DOS ELEMENTOS ---
         const accountsList = document.getElementById('accounts-list');
         const fabButton = document.getElementById('fab-add-account');
         const addModal = document.getElementById('add-account-modal');
@@ -111,13 +139,9 @@
         const editBalanceInput = document.getElementById('edit-balance-input');
         const editAccountIdInput = document.getElementById('edit-account-id');
 
-
-        // --- BANCO DE DADOS LOCAL (localStorage) ---
         const getAccounts = () => JSON.parse(localStorage.getItem('accounts')) || [];
         const saveAccounts = (accounts) => localStorage.setItem('accounts', JSON.stringify(accounts));
 
-
-        // --- FUNÇÕES DA APLICAÇÃO ---
         function loadAccounts() {
             const accounts = getAccounts();
             accountsList.innerHTML = '';
@@ -126,7 +150,6 @@
                 const formattedBalance = account.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const icon = account.name.toLowerCase().includes('cartão') ? 'fa-credit-card' : 'fa-wallet';
 
-                // ** MUDANÇA AQUI: Adicionado <i> de lixeira e movido cursor para os detalhes **
                 const accountHTML = `
                     <li class="transaction-item" data-id="${account.id}">
                         <div class="icon-container" style="background-color: #78909c;"><i class="fa-solid ${icon}"></i></div>
@@ -175,16 +198,13 @@
             }
         }
         
-        // ** NOVA FUNÇÃO PARA DELETAR CONTA **
         function deleteAccount(id) {
             let accounts = getAccounts();
-            // Filtra o array, mantendo apenas as contas com ID diferente
             accounts = accounts.filter(account => account.id !== id);
             saveAccounts(accounts);
-            loadAccounts(); // Recarrega a lista na tela
+            loadAccounts();
         }
 
-        // --- LÓGICA DOS MODAIS E EVENTOS ---
         const openAddModal = () => { addModal.style.display = 'flex'; accountNameInput.focus(); };
         const closeAddModal = () => { 
             addModal.style.display = 'none'; 
@@ -200,38 +220,40 @@
             editBalanceInput.focus();
         };
         const closeEditModal = () => { editModal.style.display = 'none'; };
+        
+        function initializeApp() {
+            fabButton.addEventListener('click', openAddModal);
+            cancelAddBtn.addEventListener('click', closeAddModal);
+            addBtn.addEventListener('click', addAccount);
+            saveEditBtn.addEventListener('click', saveAccountEdit);
+            cancelEditBtn.addEventListener('click', closeEditModal);
 
-        // Event Listeners
-        fabButton.addEventListener('click', openAddModal);
-        cancelAddBtn.addEventListener('click', closeAddModal);
-        addBtn.addEventListener('click', addAccount);
-        saveEditBtn.addEventListener('click', saveAccountEdit);
-        cancelEditBtn.addEventListener('click', closeEditModal);
+            accountsList.addEventListener('click', (event) => {
+                const accountItem = event.target.closest('.transaction-item');
+                if (!accountItem) return;
 
-        // ** MUDANÇA AQUI: Event Listener da lista agora diferencia entre DELETAR e EDITAR **
-        accountsList.addEventListener('click', (event) => {
-            const accountItem = event.target.closest('.transaction-item');
-            if (!accountItem) return; // Se o clique não foi em um item, não faz nada
+                const accountId = parseInt(accountItem.dataset.id);
+                const accounts = getAccounts();
+                const accountClicked = accounts.find(acc => acc.id === accountId);
 
-            const accountId = parseInt(accountItem.dataset.id);
-            const accounts = getAccounts();
-            const accountClicked = accounts.find(acc => acc.id === accountId);
-
-            // Verifica se o clique foi no ícone de lixeira
-            if (event.target.classList.contains('delete-icon')) {
-                if (confirm(`Tem certeza que deseja excluir a conta "${accountClicked.name}"?`)) {
-                    deleteAccount(accountId);
+                if (event.target.classList.contains('delete-icon')) {
+                    if (confirm(`Tem certeza que deseja excluir a conta "${accountClicked.name}"?`)) {
+                        deleteAccount(accountId);
+                    }
+                } else {
+                    if (accountClicked) {
+                        openEditModal(accountClicked);
+                    }
                 }
-            } else {
-                // Se não foi no ícone de lixeira, abre o modal de edição
-                if (accountClicked) {
-                    openEditModal(accountClicked);
-                }
-            }
-        });
+            });
 
-        // --- INICIALIZAÇÃO ---
-        loadAccounts();
+            loadAccounts();
+        }
+
+
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            initializeApp();
+        }
     });
     </script>
 

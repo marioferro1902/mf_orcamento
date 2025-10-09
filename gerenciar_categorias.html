@@ -8,82 +8,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <style>
-        /* Estilos específicos para a página Gerenciar Categorias */
-
-        /* Container das Abas */
-        .tabs-container {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 15px;
-            background-color: #e0e0e0;
-            border-radius: 8px;
-            padding: 5px;
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background-color: transparent;
-            color: #555;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .tab-button.active {
-            background-color: white;
-            color: #2979ff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        /* Cor específica para a aba de Despesas quando ativa */
-        #despesas-tab.active {
-            color: #c62828; /* Vermelho escuro usado nas despesas */
-        }
-        
-        /* Lista de Categorias */
-        .category-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .category-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .category-item:last-child {
-            border-bottom: none;
-        }
-
-        .category-item .icon-container {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
-
-        .category-details {
-            flex-grow: 1;
-        }
-
-        .category-details .name {
-            font-weight: bold;
-        }
+        .tabs-container { display: flex; justify-content: space-around; margin-bottom: 15px; background-color: #e0e0e0; border-radius: 8px; padding: 5px; }
+        .tab-button { flex: 1; padding: 10px; border: none; background-color: transparent; color: #555; font-size: 1em; font-weight: bold; cursor: pointer; border-radius: 6px; transition: background-color 0.3s, color 0.3s; }
+        .tab-button.active { background-color: white; color: #2979ff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        #despesas-tab.active { color: #c62828; }
+        .category-list { list-style: none; padding: 0; margin: 0; }
+        .category-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .category-item:last-child { border-bottom: none; }
+        .category-item .icon-container { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin-right: 15px; flex-shrink: 0; }
+        .category-details { flex-grow: 1; }
+        .category-details .name { font-weight: bold; }
     </style>
 </head>
 <body>
+    <div id="login-overlay">
+        <div class="login-container">
+            <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+            <h2 id="auth-title">Acesso Restrito</h2>
+            <p id="auth-message">Por favor, digite sua senha para continuar.</p>
+            <div class="auth-inputs">
+                <input type="password" id="password-input" placeholder="Senha">
+                <input type="password" id="password-confirm-input" placeholder="Confirme a Senha" style="display: none;">
+            </div>
+             <p id="auth-error" style="color: #c62828; display: none; margin-top: 10px;"></p>
+            <button id="auth-button">Entrar</button>
+        </div>
+    </div>
 
     <header>
     <a href="index.html" style="color: white; text-decoration: none;">
@@ -122,6 +72,51 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- INÍCIO DA LÓGICA DE LOGIN ---
+        const USER_STORAGE_KEY = 'mf-orcamento-user';
+        const loginOverlay = document.getElementById('login-overlay');
+        const passwordInput = document.getElementById('password-input');
+        const authButton = document.getElementById('auth-button');
+        const authError = document.getElementById('auth-error');
+
+        function getUserCredentials() {
+            const data = localStorage.getItem(USER_STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        }
+
+        function handleLogin() {
+            const credentials = getUserCredentials();
+            if (passwordInput.value === credentials.password) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                loginOverlay.style.display = 'none';
+                initializeApp(); // Inicia o app após o login
+            } else {
+                authError.textContent = 'Senha incorreta!';
+                authError.style.display = 'block';
+                passwordInput.value = '';
+            }
+        }
+        
+        function setupAuthScreen() {
+            const credentials = getUserCredentials();
+            if (credentials) {
+                authButton.onclick = handleLogin;
+                passwordInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
+            } else {
+                window.location.href = './index.html';
+            }
+        }
+
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            loginOverlay.style.display = 'flex';
+            setupAuthScreen();
+        } else {
+            loginOverlay.style.display = 'none';
+        }
+        // --- FIM DA LÓGICA DE LOGIN ---
+
+
         const despesasTab = document.getElementById('despesas-tab');
         const receitasTab = document.getElementById('receitas-tab');
         const despesasList = document.getElementById('category-list-despesas');
@@ -258,32 +253,38 @@
             }
         }
 
-        fabButton.addEventListener('click', openModalForAdd);
-        cancelButton.addEventListener('click', closeModal);
-        addButton.addEventListener('click', handleSaveCategory);
-        categoryInput.addEventListener('keypress', (e) => e.key === 'Enter' && addButton.click());
-        despesasTab.addEventListener('click', () => switchTab('despesas'));
-        receitasTab.addEventListener('click', () => switchTab('receitas'));
+        function initializeApp() {
+            fabButton.addEventListener('click', openModalForAdd);
+            cancelButton.addEventListener('click', closeModal);
+            addButton.addEventListener('click', handleSaveCategory);
+            categoryInput.addEventListener('keypress', (e) => e.key === 'Enter' && addButton.click());
+            despesasTab.addEventListener('click', () => switchTab('despesas'));
+            receitasTab.addEventListener('click', () => switchTab('receitas'));
 
-        document.body.addEventListener('click', (event) => {
-            const target = event.target;
-            const categoryItem = target.closest('.category-item');
+            document.body.addEventListener('click', (event) => {
+                const target = event.target;
+                const categoryItem = target.closest('.category-item');
 
-            if (!categoryItem) return;
+                if (!categoryItem) return;
 
-            const categoryName = categoryItem.querySelector('.name').textContent;
+                const categoryName = categoryItem.querySelector('.name').textContent;
 
-            if (target.classList.contains('delete-icon')) {
-                if (confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`)) {
-                    deleteCategory(categoryName);
+                if (target.classList.contains('delete-icon')) {
+                    if (confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`)) {
+                        deleteCategory(categoryName);
+                    }
+                } else if (target.closest('.category-details')) {
+                    openModalForEdit(categoryItem);
                 }
-            } else if (target.closest('.category-details')) {
-                openModalForEdit(categoryItem);
-            }
-        });
-        
-        switchTab('despesas');
-        loadCategories();
+            });
+            
+            switchTab('despesas');
+            loadCategories();
+        }
+
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            initializeApp();
+        }
     });
 </script>
 
