@@ -59,48 +59,12 @@ header h1 {
     flex-grow: 1;
 }
 
-#search-counter {
-    color: #555;
-    font-size: 0.9em;
-    padding: 0 8px;
-    white-space: nowrap;
-}
-
-.search-nav {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #333;
-    font-size: 1em;
-    padding: 0 5px;
-    border-left: 1px solid #ccc;
-}
-
-.search-nav:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-}
-
 #search-close-icon {
     cursor: pointer;
     font-size: 1.2em;
     color: #555;
     padding-left: 5px;
 }
-
-/* --- Estilo para o texto destacado --- */
-mark.highlight {
-    background-color: #ffd700;
-    color: black;
-    border-radius: 3px;
-    padding: 1px 3px;
-}
-
-mark.highlight.current {
-    background-color: #ff9800;
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
-}
-
 
 main {
     padding: 15px;
@@ -266,6 +230,7 @@ main {
 .modal-content input[type="text"],
 .modal-content input[type="date"],
 .modal-content input[type="number"],
+.modal-content input[type="password"],
 .modal-content select {
     width: 100%;
     padding: 10px;
@@ -277,11 +242,18 @@ main {
     font-size: 1em;
 }
 
+.modal-content input:focus {
+    outline: none;
+    border-color: #2979ff;
+    box-shadow: 0 0 0 2px rgba(41, 121, 255, 0.2);
+}
+
 
 .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    margin-top: 10px;
 }
 
 .modal-actions button {
@@ -293,12 +265,12 @@ main {
     font-size: 0.9em;
 }
 
-#add-button, #save-edit-button {
+#add-button, #save-edit-button, #save-new-password-btn {
     background-color: #2979ff;
     color: white;
 }
 
-#cancel-button, #cancel-edit-button, #action-cancel-btn {
+#cancel-button, #cancel-edit-button, #action-cancel-btn, #cancel-change-password-btn {
     background-color: #f0f2f5;
     color: #555;
 }
@@ -412,27 +384,28 @@ header .fa-bars {
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
     color: #333;
+}
+
+.section-total .expense-details {
+    text-align: left;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.section-total .expense-details p {
+    margin: 0 0 4px 0;
+}
+
+.section-total .expense-details p span {
+    font-weight: bold;
 }
 
 .section-total .overall-total {
     font-size: 1.1em;
     font-weight: bold;
     text-align: right;
-}
-
-.section-total .expense-details {
-    text-align: left;
-    font-size: 0.9em;
-    font-weight: bolder;
-    color: #555;
-}
-
-.section-total .expense-details p {
-    margin: 0 0 4px 0;
+    margin-top: 8px;
 }
 
 
@@ -449,15 +422,13 @@ header .fa-bars {
     content: none;
 }
 
-/* --- ESTILOS PARA ITENS PAGOS (MODIFICADO) --- */
 .transaction-item.paid {
-    background-color: #90fc97;
+    background-color: #7ffc8a;
 }
 
 .transaction-item.paid:hover {
     background-color: #dceddc;
 }
-
 
 #action-pay-btn.cancel-payment {
     background-color: #ffa726;
@@ -470,9 +441,11 @@ header .fa-bars {
 .vertical_line{
     width: 0%;
     padding: 1px;
-    background-color: #e0e0e0;
+    background-color: #0a0a0a;
 }
 
+
+/* --- Estilos da Tela de Bloqueio (MELHORADO) --- */
 #login-overlay {
     position: fixed;
     top: 0;
@@ -492,9 +465,11 @@ header .fa-bars {
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    text-align: center;
     width: 90%;
     max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .login-container h2 {
@@ -505,23 +480,43 @@ header .fa-bars {
 .login-container p {
     color: #666;
     margin-bottom: 20px;
+    text-align: center;
 }
 
-#password-input {
+.auth-inputs {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+#password-input,
+#password-confirm-input {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 6px;
     box-sizing: border-box;
     font-size: 1em;
-    margin-bottom: 20px;
+    transition: border-color 0.3s;
 }
 
-#login-button {
+#password-input:focus,
+#password-confirm-input:focus {
+    outline: none;
+    border-color: #2979ff;
+}
+
+#auth-error {
+    margin-bottom: 15px;
+}
+
+#auth-button {
     width: 100%;
     padding: 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     background-color: #2979ff;
     color: white;
     font-size: 1.1em;
@@ -530,7 +525,7 @@ header .fa-bars {
     transition: background-color 0.3s;
 }
 
-#login-button:hover {
+#auth-button:hover {
     background-color: #1c65d6;
 }
 
