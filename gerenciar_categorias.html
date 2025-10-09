@@ -7,6 +7,81 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="manifest" href="manifest.json">
+    <style>
+        /* Estilos específicos para a página Gerenciar Categorias */
+
+        /* Container das Abas */
+        .tabs-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            padding: 5px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background-color: transparent;
+            color: #555;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .tab-button.active {
+            background-color: white;
+            color: #2979ff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Cor específica para a aba de Despesas quando ativa */
+        #despesas-tab.active {
+            color: #c62828; /* Vermelho escuro usado nas despesas */
+        }
+        
+        /* Lista de Categorias */
+        .category-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .category-item:last-child {
+            border-bottom: none;
+        }
+
+        .category-item .icon-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .category-details {
+            flex-grow: 1;
+        }
+
+        .category-details .name {
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
@@ -15,7 +90,7 @@
         <i class="fa-solid fa-arrow-left"></i>
     </a>
         <h1>Gerenciar Categorias</h1>
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <i class="fa-solid fa-magnifying-glass" style="opacity: 0;"></i>
     </header>
 
     <main>
@@ -61,31 +136,28 @@
         let activeTab = 'despesas';
         let editingCategoryElement = null; 
 
-        // ----- FUNÇÃO MODIFICADA -----
+        function getCategories() {
+            return JSON.parse(localStorage.getItem('categories')) || { despesas: [], receitas: [] };
+        }
+
+        function saveCategories(categories) {
+            localStorage.setItem('categories', JSON.stringify(categories));
+        }
+        
         function loadCategories() {
-            const categories = JSON.parse(localStorage.getItem('categories')) || { despesas: [], receitas: [] };
+            const categories = getCategories();
             
-            // Limpa as listas antes de recarregar
             despesasList.innerHTML = '';
             receitasList.innerHTML = '';
 
             if (categories.despesas) {
-                // Ordena o array de despesas alfabeticamente
                 categories.despesas.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
                 categories.despesas.forEach(cat => renderCategory(cat, 'despesas'));
             }
             if (categories.receitas) {
-                // Ordena o array de receitas alfabeticamente
                 categories.receitas.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
                 categories.receitas.forEach(cat => renderCategory(cat, 'receitas'));
             }
-        }
-
-        function saveCategories() {
-            const despesasItems = Array.from(despesasList.querySelectorAll('.category-item .name')).map(span => span.textContent);
-            const receitasItems = Array.from(receitasList.querySelectorAll('.category-item .name')).map(span => span.textContent);
-            const categories = { despesas: despesasItems, receitas: receitasItems };
-            localStorage.setItem('categories', JSON.stringify(categories));
         }
         
         function renderCategory(name, type) {
@@ -105,7 +177,6 @@
             list.insertAdjacentHTML('beforeend', itemHTML);
         }
 
-        // ----- FUNÇÃO MODIFICADA -----
         function handleSaveCategory() {
             const categoryName = categoryInput.value.trim();
             if (!categoryName) {
@@ -113,16 +184,37 @@
                 return;
             }
 
+            let categories = getCategories();
+            
             if (editingCategoryElement) {
-                const nameSpan = editingCategoryElement.querySelector('.name');
-                nameSpan.textContent = categoryName;
+                const oldName = editingCategoryElement.querySelector('.name').textContent;
+                const list = activeTab === 'despesas' ? categories.despesas : categories.receitas;
+                const index = list.indexOf(oldName);
+                if (index > -1) {
+                    list[index] = categoryName;
+                }
             } else {
-                renderCategory(categoryName, activeTab);
+                 if (activeTab === 'despesas') {
+                    categories.despesas.push(categoryName);
+                } else {
+                    categories.receitas.push(categoryName);
+                }
             }
             
-            saveCategories();
-            loadCategories(); // Recarrega e reordena a lista na tela
+            saveCategories(categories);
+            loadCategories();
             closeModal();
+        }
+
+        function deleteCategory(name) {
+            let categories = getCategories();
+            if (activeTab === 'despesas') {
+                categories.despesas = categories.despesas.filter(c => c !== name);
+            } else {
+                categories.receitas = categories.receitas.filter(c => c !== name);
+            }
+            saveCategories(categories);
+            loadCategories();
         }
 
         function openModalForAdd() {
@@ -166,8 +258,6 @@
             }
         }
 
-        // --- EVENT LISTENERS ---
-
         fabButton.addEventListener('click', openModalForAdd);
         cancelButton.addEventListener('click', closeModal);
         addButton.addEventListener('click', handleSaveCategory);
@@ -176,26 +266,24 @@
         receitasTab.addEventListener('click', () => switchTab('receitas'));
 
         document.body.addEventListener('click', (event) => {
-            if (event.target.classList.contains('delete-icon')) {
-                const item = event.target.closest('.category-item');
-                if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-                    item.remove();
-                    saveCategories();
-                    // Não precisa recarregar aqui, pois a exclusão não desordena a lista
-                }
-                return; 
-            }
+            const target = event.target;
+            const categoryItem = target.closest('.category-item');
 
-            const categoryDetails = event.target.closest('.category-details');
-            if (categoryDetails) {
-                const itemElement = categoryDetails.closest('.category-item');
-                openModalForEdit(itemElement);
+            if (!categoryItem) return;
+
+            const categoryName = categoryItem.querySelector('.name').textContent;
+
+            if (target.classList.contains('delete-icon')) {
+                if (confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`)) {
+                    deleteCategory(categoryName);
+                }
+            } else if (target.closest('.category-details')) {
+                openModalForEdit(categoryItem);
             }
         });
         
-        // --- INICIALIZAÇÃO ---
         switchTab('despesas');
-        loadCategories(); // Esta função agora carrega as categorias já ordenadas
+        loadCategories();
     });
 </script>
 

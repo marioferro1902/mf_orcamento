@@ -10,13 +10,13 @@
 </head>
 <body>
     <div id="login-overlay">
-    <div class="login-container">
-        <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
-        <h2>Acesso Restrito</h2>
-        <p>Por favor, digite sua senha para continuar.</p>
-        <input type="password" id="password-input" placeholder="Senha">
-        <button id="login-button">Entrar</button>
-    </div>
+        <div class="login-container">
+            <img src="icon-192.png" alt="Ícone do App" style="width: 80px; margin-bottom: 20px;">
+            <h2>Acesso Restrito</h2>
+            <p>Por favor, digite sua senha para continuar.</p>
+            <input type="password" id="password-input" placeholder="Senha">
+            <button id="login-button">Entrar</button>
+        </div>
     </div>
 
     <div id="side-menu" class="side-menu">
@@ -47,12 +47,17 @@
     <header>
         <i id="menu-icon" class="fa-solid fa-bars"></i>
         <h1>MF ORÇAMENTO</h1>
-        <a href="resumo_geral.html" style="color: white; text-decoration: none;">
-            <i class="fa-solid fa-chart-simple"></i>
+        <a href="#" id="search-icon" style="color: white; text-decoration: none;">            
+            <i class="fa-solid fa-magnifying-glass"></i>
         </a>
     </header>
+    
+    <div id="search-container" class="search-container">
+        <input type="text" id="search-input" placeholder="Pesquisar em todas as transações...">
+        <i id="search-close-icon" class="fa-solid fa-xmark"></i>
+    </div>
 
-    <main>
+    <main id="main-content">
         <section class="card summary-section">
             <h2>RESUMO</h2>
             <div class="summary-container">
@@ -81,7 +86,15 @@
             </div>
             <ul id="transaction-list-month" class="transaction-list"></ul>
             <div id="month-total-container" class="section-total" style="display: none;">
-                Total: <span id="month-total-value"></span>
+                <div class="expense-details">
+                    <p id="month-income-total">Receitas: R$ 0,00</p>
+                    <p id="month-expense-total">Despesas: R$ 0,00</p>
+                    <p id="paid-expenses-total">Despesas Pagas: 0,00 R$</p>
+                    <p id="unpaid-expenses-total">Despesas Não Pagas: 0,00 R$</p>
+                </div>
+                <div class="overall-total">
+                    Total: <span id="month-total-value"></span>
+                </div>
             </div>
         </section>
         
@@ -97,7 +110,9 @@
             </div>
             <ul id="transaction-list-all" class="transaction-list"></ul>
             <div id="all-transactions-total-container" class="section-total" style="display: none;">
-                Total: <span id="all-transactions-total-value"></span>
+                 <div class="overall-total">
+                    Total: <span id="all-transactions-total-value"></span>
+                 </div>
             </div>
         </section>
 
@@ -173,18 +188,16 @@
         const passwordInput = document.getElementById('password-input');
         const loginButton = document.getElementById('login-button');
 
-        // Verifica se o usuário já está logado nesta sessão
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-            loginOverlay.style.display = 'flex'; // Mostra a tela de bloqueio
+            loginOverlay.style.display = 'flex';
         } else {
-            loginOverlay.style.display = 'none'; // Esconde a tela se já estiver logado
+            loginOverlay.style.display = 'none';
         }
 
-        // Função para tentar o login
         function attemptLogin() {
             if (passwordInput.value === correctPassword) {
-                sessionStorage.setItem('isLoggedIn', 'true'); // Marca como logado na sessão
-                loginOverlay.style.display = 'none'; // Esconde a tela de bloqueio
+                sessionStorage.setItem('isLoggedIn', 'true');
+                loginOverlay.style.display = 'none';
             } else {
                 alert('Senha incorreta!');
                 passwordInput.value = '';
@@ -301,10 +314,8 @@
             loadAllTransactionsFiltered();
         }
 
-        // NOVA FUNÇÃO DE ATUALIZAÇÃO "SUAVE"
         function refreshAllViews() {
             const allTransactions = getTransactions();
-            // Atualiza os resumos e as 3 listas de transações sem resetar os filtros
             loadCurrentMonthTransactions(allTransactions);
             loadAllTransactionsFiltered();
             loadFutureTransactions(allTransactions);
@@ -313,8 +324,8 @@
 
         function loadCurrentMonthTransactions(transactions) {
             const allTransactions = transactions || getTransactions();
-            let monthIncome = 0;
-            let monthExpense = 0;
+            let monthIncomeFiltered = 0;
+            let monthExpenseFiltered = 0;
             const now = new Date();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
@@ -355,16 +366,60 @@
             transactionListMonth.innerHTML = '';
             currentMonthTransactions.forEach(t => {
                 transactionListMonth.insertAdjacentHTML('beforeend', generateTransactionHTML(t));
-                if (t.type === 'income') monthIncome += t.amount;
-                else monthExpense += t.amount;
+                if (t.type === 'income') monthIncomeFiltered += t.amount;
+                else monthExpenseFiltered += t.amount;
             });
 
+            // --- CÁLCULO GERAL DO MÊS (IGNORA FILTROS) ---
+            let totalMonthIncome = 0;
+            let totalMonthExpenses = 0;
+            let paidExpenses = 0;
+            let unpaidExpenses = 0;
+
+            const allCurrentMonthTransactions = allTransactions.filter(t => {
+                 const transactionDate = getTransactionDate(t);
+                 return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
+            });
+
+            allCurrentMonthTransactions.forEach(t => {
+                if (t.type === 'income') {
+                    totalMonthIncome += t.amount;
+                } else { // t.type === 'expense'
+                    totalMonthExpenses += t.amount;
+                    if (t.isPaid) {
+                        paidExpenses += t.amount;
+                    } else {
+                        unpaidExpenses += t.amount;
+                    }
+                }
+            });
+
+            // --- ATUALIZAÇÃO DOS ELEMENTOS NO DOM ---
+            const monthIncomeEl = document.getElementById('month-income-total');
+            const monthExpenseEl = document.getElementById('month-expense-total');
+            const paidExpensesEl = document.getElementById('paid-expenses-total');
+            const unpaidExpensesEl = document.getElementById('unpaid-expenses-total');
+
+            if(monthIncomeEl) {
+                monthIncomeEl.innerHTML = `Receitas: <span class="income">${totalMonthIncome.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>`;
+            }
+            if(monthExpenseEl){
+                monthExpenseEl.innerHTML = `Despesas: <span class="expense">${totalMonthExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>`;
+            }
+            if(paidExpensesEl) {
+                 paidExpensesEl.innerHTML = `Despesas Pagas: <span style="color: #2979ff;">${paidExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>`;
+            }
+            if(unpaidExpensesEl) {
+                 unpaidExpensesEl.innerHTML = `Despesas Não Pagas: <span class="expense">${unpaidExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>`;
+            }
+            // --- FIM DA ATUALIZAÇÃO ---
+
             if (currentMonthTransactions.length > 0) {
-                monthTotalContainer.style.display = 'block';
+                monthTotalContainer.style.display = 'flex';
             } else {
                 monthTotalContainer.style.display = 'none';
             }
-            updateSummary(monthIncome, monthExpense);
+            updateSummary(monthIncomeFiltered, monthExpenseFiltered);
         }
 
         function loadAllTransactionsFiltered() {
@@ -653,7 +708,7 @@
             }
 
             saveTransactions(transactions);
-            refreshAllViews(); // MODIFICADO
+            refreshAllViews();
             closeAddModal();
         }
         
@@ -699,7 +754,7 @@
                     isPaid: originalTransaction.isPaid
                 };
                 saveTransactions(transactions);
-                refreshAllViews(); // MODIFICADO
+                refreshAllViews();
                 closeEditModal();
             }
         }
@@ -708,7 +763,7 @@
             let transactions = getTransactions();
             transactions = transactions.filter(t => t.id !== id);
             saveTransactions(transactions);
-            refreshAllViews(); // MODIFICADO
+            refreshAllViews();
         }
 
         function togglePaidStatus(id) {
@@ -717,7 +772,7 @@
             if (transactionIndex > -1) {
                 transactions[transactionIndex].isPaid = !transactions[transactionIndex].isPaid;
                 saveTransactions(transactions);
-                refreshAllViews(); // MODIFICADO
+                refreshAllViews();
             }
         }
 
@@ -888,6 +943,48 @@
         futureStatusFilter.addEventListener('change', () => loadFutureTransactions(getTransactions()));
         futureSorter.addEventListener('change', () => loadFutureTransactions(getTransactions()));
 
+        // --- LÓGICA DA PESQUISA (CORRIGIDA) ---
+        const searchIcon = document.getElementById('search-icon');
+        const searchContainer = document.getElementById('search-container');
+        const searchInput = document.getElementById('search-input');
+        const searchClose = document.getElementById('search-close-icon');
+
+        const openSearch = () => {
+            searchContainer.classList.add('active');
+            searchInput.focus();
+        };
+
+        const closeSearch = () => {
+            searchContainer.classList.remove('active');
+            searchInput.value = '';
+            performSearch(); // Chama a pesquisa com valor vazio para mostrar tudo
+        };
+
+        const performSearch = () => {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const allTransactionItems = document.querySelectorAll('.transaction-item');
+
+            allTransactionItems.forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                if (itemText.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        };
+
+        searchIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (searchContainer.classList.contains('active')) {
+                closeSearch();
+            } else {
+                openSearch();
+            }
+        });
+        searchClose.addEventListener('click', closeSearch);
+        searchInput.addEventListener('input', performSearch);
+        
         window.addEventListener('scroll', () => {
             const fabButton = document.getElementById('fab-add-transaction');
             if (!fabButton) return;

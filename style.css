@@ -23,6 +23,85 @@ header h1 {
     font-size: 1.2em;
 }
 
+/* --- Estilos da Barra de Pesquisa --- */
+.search-container {
+    position: sticky; 
+    top: 0;
+    z-index: 1001;
+    background-color: #f9f9f9;
+    padding: 0 15px; 
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+    border-bottom: 1px solid #ddd;
+}
+
+.search-container.active {
+    padding: 8px 15px;
+    max-height: 60px; 
+    opacity: 1; 
+    visibility: visible;
+}
+
+
+#search-input {
+    width: 100%;
+    border: none;
+    padding: 8px 0;
+    font-size: 1em;
+    background-color: transparent;
+    outline: none;
+    flex-grow: 1;
+}
+
+#search-counter {
+    color: #555;
+    font-size: 0.9em;
+    padding: 0 8px;
+    white-space: nowrap;
+}
+
+.search-nav {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #333;
+    font-size: 1em;
+    padding: 0 5px;
+    border-left: 1px solid #ccc;
+}
+
+.search-nav:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+#search-close-icon {
+    cursor: pointer;
+    font-size: 1.2em;
+    color: #555;
+    padding-left: 5px;
+}
+
+/* --- Estilo para o texto destacado --- */
+mark.highlight {
+    background-color: #ffd700;
+    color: black;
+    border-radius: 3px;
+    padding: 1px 3px;
+}
+
+mark.highlight.current {
+    background-color: #ff9800;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+
 main {
     padding: 15px;
 }
@@ -126,7 +205,6 @@ main {
     display: block;
 }
 
-/* Cores dos valores das transações */
 .transaction-item.income .transaction-amount {
     color: #2e7d32;
     font-weight: bold;
@@ -157,80 +235,14 @@ main {
     transition: transform 0.2s ease-in-out;
 }
 
-
-/* Estilos para a página Gerenciar Categorias */
-
-/* Container das Abas */
-.tabs-container {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 15px;
-    background-color: #e0e0e0;
-    border-radius: 8px;
-    padding: 5px;
-}
-
-.tab-button {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    background-color: transparent;
-    color: #555;
-    font-size: 1em;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.tab-button.active {
-    background-color: white;
-    color: #2979ff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-/* Lista de Categorias */
-.category-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.category-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.category-item:last-child {
-    border-bottom: none;
-}
-
-.category-details {
-    flex-grow: 1;
-}
-
-.category-details .name {
-    font-weight: bold;
-}
-
-.drag-handle {
-    color: #aaa;
-    cursor: grab;
-    margin-left: 15px;
-}
-
-/* Estilos para o Modal de Adicionar Categoria */
-
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
-    display: none; /* Começa oculto */
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -251,16 +263,20 @@ main {
     color: #333;
 }
 
-.modal-content input[type="text"] {
+.modal-content input[type="text"],
+.modal-content input[type="date"],
+.modal-content input[type="number"],
+.modal-content select {
     width: 100%;
     padding: 10px;
     margin-top: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-sizing: border-box; /* Garante que o padding não aumente a largura */
+    box-sizing: border-box; 
     font-size: 1em;
 }
+
 
 .modal-actions {
     display: flex;
@@ -277,32 +293,30 @@ main {
     font-size: 0.9em;
 }
 
-#add-button {
-    background-color: #2979ff; /* Azul do app */
+#add-button, #save-edit-button {
+    background-color: #2979ff;
     color: white;
 }
 
-#cancel-button {
-    background-color: #f0f2f5; /* Fundo do app */
+#cancel-button, #cancel-edit-button, #action-cancel-btn {
+    background-color: #f0f2f5;
     color: #555;
 }
 
-/* Estilos para o Menu Lateral */
 .side-menu {
-    height: 100%; /* Altura total */
-    width: 0; /* Começa escondido */
-    position: fixed; /* Fica fixo na tela */
-    z-index: 2000; /* Fica na frente de tudo */
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 2000;
     top: 0;
     left: 0;
-    background-color: #ffffff; /* Fundo branco */
+    background-color: #ffffff;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    overflow-x: hidden; /* Desabilita scroll horizontal */
-    padding-top: 60px; /* Espaço no topo */
-    transition: 0.4s; /* Animação suave de abertura/fechamento */
+    overflow-x: hidden;
+    padding-top: 60px;
+    transition: 0.4s;
 }
 
-/* Estilo dos links dentro do menu */
 .side-menu a {
     padding: 15px 20px;
     text-decoration: none;
@@ -312,19 +326,16 @@ main {
     transition: 0.3s;
 }
 
-/* Ícones dentro dos links do menu */
 .side-menu a i {
     margin-right: 10px;
-    width: 20px; /* Alinha o texto */
+    width: 20px;
 }
 
-/* Efeito ao passar o mouse sobre os links */
 .side-menu a:hover {
-    background-color: #f0f2f5; /* Cor de fundo do app */
-    color: #2979ff; /* Cor azul do app */
+    background-color: #f0f2f5;
+    color: #2979ff;
 }
 
-/* Botão de fechar (X) */
 .side-menu .close-btn {
     position: absolute;
     top: 0;
@@ -334,50 +345,41 @@ main {
     padding-top: 15px;
 }
 
-/* Cursor de ponteiro para o ícone do menu no header */
 header .fa-bars {
     cursor: pointer;
 }
 
-/* Cor específica para a aba de Despesas quando ativa */
-#despesas-tab.active {
-    color: #c62828; /* Vermelho escuro usado nas despesas */
-}
-
-/* Estilo para o ícone de lixeira nas listas */
 .delete-icon {
-    color: #c62828; /* Vermelho escuro */
-    margin-left: auto; /* Empurra o ícone para a extremidade direita */
+    color: #c62828;
+    margin-left: auto;
     cursor: pointer;
     font-size: 1.1em;
     transition: transform 0.2s;
-    padding-left: 15px; /* Garante um espaço mínimo do valor */
+    padding-left: 15px;
 }
 
 .delete-icon:hover {
-    transform: scale(1.2); /* Efeito de zoom ao passar o mouse */
+    transform: scale(1.2);
 }
 
-/* Estilo para a legenda do mês nas transações */
 .month-legend {
     text-align: center;
     font-weight: bold;
     color: #050505;
-    margin-top: -10px; /* Ajuste para ficar mais perto do título */
+    margin-top: -10px;
     margin-bottom: 15px;
     font-size: 1em;
 }
 
-/* Estilo para o container dos filtros de data */
 .filter-container {
     display: flex;
-    gap: 10px; /* Espaço entre os seletores */
+    gap: 10px;
     margin-top: -5px;
     margin-bottom: 15px;
 }
 
 .filter-container select {
-    flex: 1; /* Faz com que ambos ocupem o mesmo espaço */
+    flex: 1;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -385,117 +387,103 @@ header .fa-bars {
     font-size: 0.9em;
 }
 
-/* Media Query para telas pequenas (como as de celular) */
 @media (max-width: 450px) {
     .filter-container {
-        flex-direction: column; /* Muda a direção para vertical */
+        flex-direction: column;
     }
 }
 
-/* Estilo para o seletor de mês/ano */
-#month-selector {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background-color: #f9f9f9;
-    font-size: 1em;
-    font-family: Arial, sans-serif;
-    margin-top: -5px;
-    margin-bottom: 15px;
-}
-
-/* Garante que o texto seja branco em cabeçalhos com cor de fundo definida via style */
-.month-header[style] {
+.month-header {
+    padding: 5px 15px;
     color: white;
+    font-weight: bold;
 }
 
-/* Estilo para o botão de apagar dados no menu */
 #delete-all-data-btn, #delete-all-data-btn i {
-    color: #c62828; /* Vermelho escuro */
+    color: #c62828;
     font-weight: bold;
 }
 
 #delete-all-data-btn:hover {
-    background-color: #ffeeee !important; /* Um fundo levemente avermelhado no hover */
+    background-color: #ffeeee !important;
 }
 
-/* Estilo para a linha de total no final de uma seção de transações */
 .section-total {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid #eee; /* Linha separadora */
-    text-align: right;
-    font-size: 1.1em;
-    font-weight: bold;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
     color: #333;
 }
 
-/* Estilo para a linha de total de cada mês na seção de transações futuras */
+.section-total .overall-total {
+    font-size: 1.1em;
+    font-weight: bold;
+    text-align: right;
+}
+
+.section-total .expense-details {
+    text-align: left;
+    font-size: 0.9em;
+    font-weight: bolder;
+    color: #555;
+}
+
+.section-total .expense-details p {
+    margin: 0 0 4px 0;
+}
+
+
 .future-month-total {
     text-align: right;
     font-weight: bold;
     padding: 12px 15px 12px 0;
-    border-top: 1px dashed #ddd; /* Linha separadora pontilhada */
+    border-top: 1px dashed #ddd;
     list-style-type: none;
     font-size: 1em;
 }
 
-/* Garante que o item de total não pareça um item de transação normal */
 .future-month-total::before {
     content: none;
 }
 
-/* Estilo para item de transação marcado como pago */
+/* --- ESTILOS PARA ITENS PAGOS (MODIFICADO) --- */
 .transaction-item.paid {
-    background-color: #9ff8a7; /* Verde bem claro */
+    background-color: #90fc97;
 }
 
-/* Garante que o hover não sobrescreva a cor de pago */
 .transaction-item.paid:hover {
-    background-color: #dceddc; /* Um tom um pouco mais escuro de verde claro */
+    background-color: #dceddc;
 }
 
-/* Estilo para o botão de 'Pagar' quando a ação é 'Cancelar Pagamento' */
+
 #action-pay-btn.cancel-payment {
-    background-color: #ffa726; /* Laranja, para indicar uma ação de 'desfazer' */
+    background-color: #ffa726;
 }
 
-/* Estilo para o seletor de filtro do mês atual */
-#current-month-filter {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background-color: #f9f9f9;
-    font-size: 0.9em;
-    font-family: Arial, sans-serif; 
-}
-
-/* Adicione esta nova regra no lugar */
-/* Adiciona uma borda preta à esquerda de cada resumo, exceto o primeiro */
 .summary-month + .summary-month {
-    padding-left: 20px; /* Adiciona um espaçamento para o texto não colar na linha */
+    padding-left: 20px;
 }
 
 .vertical_line{
     width: 0%;
     padding: 1px;
-    background-color: #0c0c0c;
+    background-color: #e0e0e0;
 }
 
-/* --- Estilos da Tela de Bloqueio --- */
 #login-overlay {
-    position: fixed; /* Cobre toda a tela */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #f0f2f5; /* Mesma cor de fundo do app */
-    display: flex; /* Centraliza o conteúdo */
+    background-color: #f0f2f5;
+    display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999; /* Garante que fique na frente de tudo */
+    z-index: 9999;
     flex-direction: column;
 }
 
@@ -534,7 +522,7 @@ header .fa-bars {
     padding: 12px;
     border: none;
     border-radius: 4px;
-    background-color: #2979ff; /* Azul do app */
+    background-color: #2979ff;
     color: white;
     font-size: 1.1em;
     font-weight: bold;
@@ -545,3 +533,4 @@ header .fa-bars {
 #login-button:hover {
     background-color: #1c65d6;
 }
+
