@@ -379,8 +379,8 @@
                 refreshAllViews();
                 populateYearSelector(getTransactions());
                 populateMonthSelector();
-                const lastMonth = new Date();
-                lastMonth.setMonth(lastMonth.getMonth());
+                const lastMonth = new Date();                
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
                 monthSelect.value = lastMonth.getMonth();
                 const lastMonthYear = lastMonth.getFullYear();
                 if (Array.from(yearSelect.options).some(opt => opt.value == lastMonthYear)) {

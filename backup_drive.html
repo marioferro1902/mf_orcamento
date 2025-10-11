@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css"/>
   <link rel="manifest" href="manifest.json"/>
 
-  <!-- PRÉ-CARREGAR as bibliotecas (evita perder o gesto do usuário) -->
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -83,7 +82,7 @@
             if (passwordInput.value === credentials.password) {
                 sessionStorage.setItem('isLoggedIn', 'true');
                 loginOverlay.style.display = 'none';
-                initializeApp(); 
+                initializeBackupApp(); 
             } else {
                 authError.textContent = 'Senha incorreta!';
                 authError.style.display = 'block';
@@ -123,10 +122,10 @@
             setupAuthScreen();
         } else {
             loginOverlay.style.display = 'none';
-            initializeApp();
+            initializeBackupApp();
         }
 
-        function initializeApp() {
+        function initializeBackupApp() {
             const CLIENT_ID = '665704691318-r51olsj24q86sb8htcho1eaj0v583af8.apps.googleusercontent.com';
             const SCOPES = 'https://www.googleapis.com/auth/drive.file';
             const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
@@ -137,75 +136,78 @@
             const statusDiv = document.getElementById('status');
 
             let tokenClient;
-            let gapiReady = false;
-            let gisReady = false;
-            let isAuthorized = false;
+            let gapiInited = false;
+            let gisInited = false;
 
-            statusDiv.textContent = 'Pronto para iniciar.';
+            statusDiv.textContent = 'Carregando bibliotecas do Google...';
+            btnAuth.disabled = true;
 
-            gapi.load('client', async () => {
-                try {
-                await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
-                gapiReady = true;
-                } catch (e) {
-                console.error('Falha init gapi:', e);
-                statusDiv.textContent = 'Erro ao carregar Google API.';
-                }
-            });
-
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                use_fedcm_for_prompt: true,
-                callback: (response) => {
-                    btnAuth.disabled = false;
-                    if (response.error) {
-                    console.error(response.error);
-                    statusDiv.textContent = 'Erro de autorização. Tente novamente.';
-                    return;
-                    }
-                    gapi.client.setToken({ access_token: response.access_token });
-                    isAuthorized = true;
-                    btnRevoke.style.display = 'block';
-                    btnAuth.textContent = 'Fazer Novo Backup';
-                    statusDiv.textContent = 'Autorizado! Clique novamente para fazer o backup.';
-                },
-                });
-                gisReady = true;
-            } catch (e) {
-                console.error('Falha init GIS:', e);
-                statusDiv.textContent = 'Erro ao carregar Google Identity.';
+            function gapiLoaded() {
+                gapi.load('client', initializeGapiClient);
             }
-            
-            btnAuth.addEventListener('click', async () => {
-                if (!(gapiReady && gisReady)) {
-                    statusDiv.textContent = 'Carregando bibliotecas do Google...';
-                    btnAuth.disabled = true;
-                    setTimeout(() => { btnAuth.disabled = false; }, 1200);
-                    return;
+            async function initializeGapiClient() {
+                await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+                gapiInited = true;
+                maybeEnableButtons();
+            }
+            function gisLoaded() {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: '', // O callback é tratado na promise
+                });
+                gisInited = true;
+                maybeEnableButtons();
+            }
+            function maybeEnableButtons() {
+                if (gapiInited && gisInited) {
+                    statusDiv.textContent = 'Pronto para iniciar.';
+                    btnAuth.disabled = false;
                 }
+            }
 
-                if (!isAuthorized) {
-                    statusDiv.textContent = 'Pedindo autorização...';
-                    btnAuth.disabled = true;
-                    tokenClient.requestAccessToken({ prompt: '' });
-                    return;
+            // Carrega os scripts dinamicamente para garantir a ordem
+            const gapiScript = document.createElement('script');
+            gapiScript.src = 'https://apis.google.com/js/api.js';
+            gapiScript.onload = gapiLoaded;
+            document.body.appendChild(gapiScript);
+
+            const gisScript = document.createElement('script');
+            gisScript.src = 'https://accounts.google.com/gsi/client';
+            gisScript.onload = gisLoaded;
+            document.body.appendChild(gisScript);
+
+
+            btnAuth.addEventListener('click', async () => {
+                const token = gapi.client.getToken();
+                if (token === null) {
+                    // Solicita autorização
+                    tokenClient.callback = async (resp) => {
+                        if (resp.error !== undefined) {
+                            statusDiv.textContent = 'Erro de autorização. Tente novamente.';
+                            throw (resp);
+                        }
+                        btnRevoke.style.display = 'block';
+                        btnAuth.textContent = 'Fazer Novo Backup';
+                        statusDiv.textContent = 'Autorizado! Clique novamente para fazer o backup.';
+                    };
+                    tokenClient.requestAccessToken({ prompt: 'consent' });
+                } else {
+                    // Já autorizado, faz o backup
+                    backupDataToDrive();
                 }
-                backupDataToDrive();
             });
             
             btnRevoke.addEventListener('click', () => {
-                const tok = gapi.client.getToken();
-                if (!tok || !tok.access_token) return;
-
-                google.accounts.oauth2.revoke(tok.access_token, () => {
-                    gapi.client.setToken('');
-                    isAuthorized = false;
-                    btnRevoke.style.display = 'none';
-                    btnAuth.textContent = 'Autorizar e Fazer Backup';
-                    statusDiv.textContent = 'Acesso revogado.';
-                });
+                const token = gapi.client.getToken();
+                if (token !== null) {
+                    google.accounts.oauth2.revoke(token.access_token, () => {
+                        gapi.client.setToken('');
+                        btnRevoke.style.display = 'none';
+                        btnAuth.textContent = 'Autorizar e Fazer Backup';
+                        statusDiv.textContent = 'Acesso revogado.';
+                    });
+                }
             });
             
             async function backupDataToDrive() {
@@ -216,6 +218,10 @@
 
                     statusDiv.textContent = 'Preparando os dados...';
                     const backupData = collectBackupData();
+                    if (!backupData) {
+                        statusDiv.textContent = 'Não há dados para fazer backup.';
+                        return;
+                    }
 
                     const ts = new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
                     const uniqueFileName = `backup-orcamento-${ts}.json`;
@@ -225,26 +231,25 @@
                     const delimiter = "\r\n--" + boundary + "\r\n";
                     const close_delim = "\r\n--" + boundary + "--";
                     const multipartRequestBody =
-                    delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(fileMetadata) +
-                    delimiter + 'Content-Type: application/json\r\n\r\n' +
-                    backupData + close_delim;
+                        delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                        JSON.stringify(fileMetadata) +
+                        delimiter + 'Content-Type: application/json\r\n\r\n' +
+                        backupData + close_delim;
 
                     statusDiv.textContent = 'Enviando arquivo ao Drive...';
-
                     const response = await gapi.client.request({
-                    path: 'https://www.googleapis.com/upload/drive/v3/files',
-                    method: 'POST',
-                    params: { uploadType: 'multipart' },
-                    headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
-                    body: multipartRequestBody
+                        path: '/upload/drive/v3/files',
+                        method: 'POST',
+                        params: { uploadType: 'multipart' },
+                        headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
+                        body: multipartRequestBody
                     });
 
-                    if (response.status === 200 && response.result) {
-                    statusDiv.textContent = `Backup "${response.result.name}" realizado com sucesso!`;
+                    if (response.status === 200) {
+                        statusDiv.textContent = `Backup "${uniqueFileName}" realizado com sucesso!`;
                     } else {
-                    statusDiv.textContent = 'Erro: a API não confirmou a criação do arquivo.';
-                    console.error('Resposta inesperada:', response);
+                        statusDiv.textContent = 'Erro: Falha no envio do arquivo.';
+                        console.error('Resposta inesperada:', response);
                     }
                 } catch (error) {
                     const msg = error?.result?.error?.message || error.message || String(error);
@@ -255,12 +260,15 @@
 
             function collectBackupData() {
                 const allData = {};
+                let hasData = false;
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     if(key !== USER_STORAGE_KEY) {
                         allData[key] = JSON.parse(localStorage.getItem(key));
+                        hasData = true;
                     }
                 }
+                if (!hasData) return null;
                  allData.lastBackup = new Date().toISOString();
                 return JSON.stringify(allData, null, 2);
             }
@@ -268,15 +276,15 @@
             async function findOrCreateFolder() {
                 try {
                     let resp = await gapi.client.drive.files.list({
-                    q: `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                    fields: 'files(id,name)'
+                        q: `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                        fields: 'files(id,name)'
                     });
                     if (resp.result.files?.length) return resp.result.files[0].id;
 
                     statusDiv.textContent = 'Pasta não encontrada. Criando...';
                     resp = await gapi.client.drive.files.create({
-                    resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
-                    fields: 'id'
+                        resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
+                        fields: 'id'
                     });
                     return resp.result.id;
                 } catch (e) {
@@ -291,3 +299,4 @@
   </script>
 </body>
 </html>
+
