@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.marioferro1902.twa",
+        "sha256_cert_fingerprints": ["A4:6B:A4:8C:A0:01:CF:F3:67:F8:D3:56:7F:38:7C:88:B2:68:34:7D:CF:49:9F:45:84:64:AC:74:A2:8B:5B:A2"]
+      }
+    }]
